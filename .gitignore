@@ -58,3 +58,8 @@ Thumbs.db
 *.zip
 kaggle.json
 
+
+
+# Large raw PDF documents (extracted text is preserved in CSV and JSON metadata)
+documentos_reales_es/**/*.pdf
+*.pdf

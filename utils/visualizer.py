@@ -36,7 +36,7 @@ def plot_distribucion_clases(output_dir: str = "graficos"):
     draw = ImageDraw.Draw(img)
 
     draw.text((50, 35), "Distribución de Documentos por Categoría (Corpus Tobacco-3482)", fill=(15, 23, 42), font=_get_font(24, bold=True))
-    draw.text((50, 72), "Subconjunto balanceado: 75 documentos por clase (Total = 300) | Justificación: S5 Preprocesamiento (slide 12)", fill=(71, 85, 105), font=_get_font(15))
+    draw.text((50, 72), "Subconjunto balanceado: 75 documentos por clase (Total = 300) | Partición honesta", fill=(71, 85, 105), font=_get_font(15))
     draw.rounded_rectangle([(50, 115), (950, 545)], radius=12, fill=(255, 255, 255), outline=(226, 232, 240), width=1)
 
     classes = ["Form", "Letter", "Memo", "Report"]
@@ -81,7 +81,7 @@ def plot_eda_longitud_documentos(output_dir: str = "graficos"):
     draw = ImageDraw.Draw(img)
 
     draw.text((50, 30), "Análisis Exploratorio de Datos (EDA): Longitud en Palabras por Categoría", fill=(15, 23, 42), font=_get_font(23, bold=True))
-    draw.text((50, 68), "Medición de tendencia central, dispersión y asimetría positiva (media > mediana) | S5 slide 8-11", fill=(71, 85, 105), font=_get_font(14))
+    draw.text((50, 68), "Medición de tendencia central, dispersión y asimetría positiva (media > mediana)", fill=(71, 85, 105), font=_get_font(14))
     draw.rounded_rectangle([(50, 110), (620, 590)], radius=12, fill=(255, 255, 255), outline=(226, 232, 240))
     draw.text((75, 130), "Distribución Boxplot (Longitud en Palabras)", fill=(30, 41, 59), font=_get_font(16, bold=True))
 
@@ -146,7 +146,7 @@ def plot_eda_longitud_documentos(output_dir: str = "graficos"):
             curr_x += w
 
     draw.rounded_rectangle([(670, 360), (970, 560)], radius=8, fill=(248, 250, 252), outline=(226, 232, 240))
-    draw.text((685, 372), "Conclusiones del EDA (S5):", fill=(30, 41, 59), font=_get_font(13, bold=True))
+    draw.text((685, 372), "Conclusiones del EDA:", fill=(30, 41, 59), font=_get_font(13, bold=True))
     obs_lines = [
         "1. Report presenta documentos notablemente",
         "   más extensos (media 174.6 palabras).",

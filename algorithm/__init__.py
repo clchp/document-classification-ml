@@ -1,14 +1,16 @@
 """
-Módulo de algoritmos y modelos de clasificación (S10 Algoritmos de Clasificación y S7 Regresión/Regularización).
+Módulo de algoritmos y modelos de clasificación supervisada y evaluación experimental.
 """
 
 from .classifiers import (
     build_classifier_models,
     tune_knn,
     tune_decision_tree_depth,
+    tune_logistic_regression_regularization,
     train_logistic_regression,
     train_naive_bayes,
-    train_random_forest
+    train_random_forest,
+    predict_new_document
 )
 from .reduction import (
     apply_chi2_selection,
@@ -26,9 +28,11 @@ __all__ = [
     "build_classifier_models",
     "tune_knn",
     "tune_decision_tree_depth",
+    "tune_logistic_regression_regularization",
     "train_logistic_regression",
     "train_naive_bayes",
     "train_random_forest",
+    "predict_new_document",
     "apply_chi2_selection",
     "apply_svd_reduction",
     "compute_svd_cumulative_variance",
@@ -37,4 +41,3 @@ __all__ = [
     "compute_per_class_metrics",
     "run_stratified_cv_evaluation",
 ]
-
