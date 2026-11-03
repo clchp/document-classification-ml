@@ -103,6 +103,7 @@ class ClasificadorDocumental:
             raise FileNotFoundError(f"No se encontró el dataset en '{self.dataset_path}'.")
 
         df = pd.read_csv(self.dataset_path)
+        self.num_documentos = len(df)
         X_raw = df["texto_limpio"].fillna("").astype(str).tolist()
         y_raw = df["categoria"].tolist()
 
@@ -239,6 +240,15 @@ Objective: This report presents analytical sampling findings regarding smoke emi
 Methodology: Multistage probabilistic sampling following ISO standards with gas chromatography laboratory analysis.
 Results: Gas chromatography assays revealed mean nicotine concentration of 1.42 mg per cigarette rod with standard deviation of 0.18 mg.
 Conclusions: Compliance was verified in 92% of evaluated batches."""
+    ),
+    (
+        "Recurso de Apelación Tributaria de Empresa Privada (Tribunal Fiscal / SUNAT)",
+        """ESCRITO DE APELACIÓN ANTE EL TRIBUNAL FISCAL.
+SUMILLA: Interpone recurso de apelación contra resolución de determinación sobre precios de transferencia y deducibilidad de gastos financieros.
+SEÑORES MIEMBROS DEL TRIBUNAL FISCAL:
+La compañía minera privada con RUC [RUC_EMPRESA], debidamente personada por su representante legal, con el debido respeto nos presentamos y exponemos:
+Que dentro del plazo legal acudimos a su despacho para apelar la resolución de intendencia emitida por SUNAT, toda vez que el reparo fiscal desconoce indebidamente los gastos financieros de leasing operativo y contratos de consorcio. Conforme a las directrices de precios de transferencia, solicitamos revocar el acto impugnado.
+A ustedes pedimos acceder a lo solicitado. Atentamente."""
     )
 ]
 
@@ -246,11 +256,11 @@ Conclusions: Compliance was verified in 92% of evaluated batches."""
 def ejecutar_demo(clasificador: ClasificadorDocumental):
     print("\n" + "#" * 68)
     print("### DEMOSTRACIÓN DE CLASIFICACIÓN BILINGÜE EN TIEMPO REAL ###")
-    print("### Corpus: 600 Documentos | Espacio: Unigramas + Bigramas    ###")
+    print(f"### Corpus: {clasificador.num_documentos} Documentos | Espacio: Unigramas + Bigramas    ###")
     print("#" * 68)
 
     for i, (titulo, texto) in enumerate(CASOS_DEMO, 1):
-        print(f"\n[CASO {i}/4] {titulo}")
+        print(f"\n[CASO {i}/{len(CASOS_DEMO)}] {titulo}")
         pred, conf, probs, limpio = clasificador.predecir(texto)
         mostrar_resultado(texto, pred, conf, probs, limpio, origen="Caso de prueba predefinido")
 
