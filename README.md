@@ -100,6 +100,10 @@ Para asegurar realismo administrativo y viabilidad cross-lingüe, el corpus inte
 
 El corpus total consolidado consta de **600 documentos**, con balance de **150 documentos por categoría** y **300 documentos por idioma**.
 
+<p align="center">
+  <img src="graficos/01_distribucion_clases.png" alt="Distribución Balanceada del Corpus Bilingüe" width="85%" />
+</p>
+
 ---
 
 ## 4. Preprocesamiento Lingüístico Bilingüe (NLP)
@@ -124,6 +128,10 @@ def limpiar_texto(texto: str, idioma: str = "auto") -> str:
 | **Carta / Oficio (Letter)** | 150 | 118.6 | 112.0 | 46.3 | 82.0 | 148.0 | +0.95 (Moderada) |
 | **Memorándum (Memo)** | 150 | 112.8 | 105.0 | 42.5 | 72.0 | 140.0 | +1.04 (Pronunciada) |
 | **Informe Técnico (Report)** | 150 | 182.5 | 170.0 | 74.8 | 122.0 | 230.0 | +1.41 (Pronunciada) |
+
+<p align="center">
+  <img src="graficos/02_eda_longitud_documentos.png" alt="Análisis Exploratorio de Longitud Textual" width="85%" />
+</p>
 
 ---
 
@@ -153,10 +161,18 @@ Los términos con mayor puntaje discriminante reflejan la estructura documental:
 - *Memorándum:* `memorando`, `asunto`, `para`, `referencia`, `expediente`, `coordinación`, `interno`.
 - *Informe Técnico:* `informe técnico`, `metodología`, `muestreo`, `evaluación`, `conclusiones`, `baja`.
 
+<p align="center">
+  <img src="graficos/04_top_palabras_chi2.png" alt="Términos más Informativos por Chi-Cuadrado" width="85%" />
+</p>
+
 ### 6.3 Reducción Dimensional por TruncatedSVD (LSA / PCA)
 Se factoriza la matriz de términos en componentes latentes densos:
 $$X \approx U_k \Sigma_k V_k^T$$
 Con $k = 30$ componentes latentes, se captura el 51.82% de la varianza explicada acumulada, eliminando correlaciones espurias y permitiendo el entrenamiento eficiente de algoritmos basados en distancias y ensambles de árboles.
+
+<p align="center">
+  <img src="graficos/03_varianza_explicada_svd.png" alt="Varianza Explicada TruncatedSVD" width="85%" />
+</p>
 
 ---
 
@@ -169,6 +185,11 @@ El módulo [`algorithm/classifiers.py`](algorithm/classifiers.py) encapsula cinc
 3. **K-Nearest Neighbors (KNN, $k=5$, Distancia Coseno):** Algoritmo no paramétrico basado en vecindad en el espacio normalizado, donde la similitud coseno evalúa la orientación del vector semántico independientemente de la longitud absoluta del texto.
 4. **Árbol de Decisión CART (Pre-poda con `max_depth=5`):** Partición binaria recursiva guiada por minimización de la impureza de Gini. La pre-poda impide la fragmentación excesiva de hojas.
 5. **Random Forest (Ensamble con SVD):** Agregación por votación mayoritaria (*bagging*) de 20 árboles entrenados sobre subespacios de componentes latentes, reduciendo sustancialmente la varianza de predicción.
+
+<p align="center">
+  <img src="graficos/05_knn_efecto_k.png" alt="Optimización de Hiperparámetro K en KNN" width="48%" />
+  <img src="graficos/06_arbol_profundidad_poda.png" alt="Pre-poda en Árboles CART" width="48%" />
+</p>
 
 ---
 
@@ -185,6 +206,10 @@ El módulo [`algorithm/classifiers.py`](algorithm/classifiers.py) encapsula cinc
 | **Árbol de Decisión CART** | $0.545 \pm 0.062$ | $0.873 \pm 0.048$ | **$0.725 \pm 0.031$** | $\pm 0.031$ | No (inestabilidad de partición) |
 
 *Nota metodológica fundamental:* Se observa que el corpus en español ya **no presenta el $1.000$ artificial** anterior, sino un valor realista de **$0.913 \pm 0.025$** con varianza natural entre pliegues, producto de la incorporación de los 61 documentos reales de Gob.pe y los casos limítrofes.
+
+<p align="center">
+  <img src="graficos/07_comparativa_modelos_cv.png" alt="Comparativa de Modelos en Validación Cruzada" width="85%" />
+</p>
 
 ### 8.2 Evaluación en Conjunto de Prueba Independiente (Hold-Out Test: 120 Documentos No Vistos)
 
@@ -213,6 +238,14 @@ $$\begin{pmatrix}
 \textbf{Report} & 0 & 0 & 1 & \mathbf{29}
 \end{pmatrix}$$
 
+<p align="center">
+  <img src="graficos/08_matriz_confusion_logreg.png" alt="Matriz de Confusión Regresión Logística" width="48%" />
+  <img src="graficos/09_matriz_confusion_naive_bayes.png" alt="Matriz de Confusión Naive Bayes" width="48%" />
+</p>
+<p align="center">
+  <img src="graficos/10_matriz_confusion_random_forest.png" alt="Matriz de Confusión Random Forest" width="55%" />
+</p>
+
 ---
 
 ## 9. Análisis Factorial y Transferencia Cruzada Zero-Shot
@@ -223,6 +256,10 @@ $$\begin{pmatrix}
 | **2. Monolingüe Inglés (Tobacco-3482)** | 300 | 0.7530 | 75.70% | Limitado por tamaño de muestra ($n=75$ por clase) y ruido OCR. |
 | **3. Monolingüe Español (Gob.pe Real / ALIA)** | 300 | 0.9130 | 91.33% | Desempeño sólido y creíble con documentos reales del Estado Peruano. |
 | **4. Bilingüe Consolidado (Conjunto EN + ES)** | **600** | **0.8662** | **86.67%** | **SUPERACIÓN DE LA META ($F1 \ge 0.82$) CON RIGOR CIENTÍFICO.** |
+
+<p align="center">
+  <img src="graficos/11_transferencia_cross_lingual.png" alt="Análisis Factorial y Transferencia Cross-Lingual" width="85%" />
+</p>
 
 ---
 
