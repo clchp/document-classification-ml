@@ -60,33 +60,33 @@ def plot_01_distribucion_clases(output_dir: str = "graficos"):
     img = Image.new("RGB", (900, 520), BG_COLOR)
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 880, 500], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
-    draw.text((40, 35), "Distribución Balanceada del Corpus Documental Bilingüe (N = 600)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "300 documentos en Inglés (Tobacco-3482) y 300 en Español (Gob.pe / MINSA / ALIA)", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 35), "Distribución Balanceada del Corpus Documental Bilingüe (N = 680)", fill=TEXT_DARK, font=f_title)
+    draw.text((40, 68), "300 documentos en Inglés (Tobacco-3482) y 380 en Español (300 Gob.pe / 80 Privados)", fill=TEXT_MUTED, font=f_sub)
 
     classes = ["Formulario\n(Form)", "Carta / Oficio\n(Letter)", "Memorándum\n(Memo)", "Informe Técnico\n(Report)"]
     x_starts = [120, 300, 480, 660]
     bar_width = 110
     y_base = 400
-    h_unit = 2.0
+    h_unit = 1.6
 
     for cls_name, x in zip(classes, x_starts):
         h_en = int(75 * h_unit)
         draw.rounded_rectangle([x, y_base - h_en, x + bar_width, y_base], radius=4, fill=BLUE_MAIN)
         draw.text((x + 35, y_base - h_en // 2 - 8), "75 EN", fill=(255, 255, 255), font=f_label)
 
-        h_es = int(75 * h_unit)
+        h_es = int(95 * h_unit)
         draw.rounded_rectangle([x, y_base - h_en - h_es, x + bar_width, y_base - h_en - 2], radius=4, fill=ORANGE_MAIN)
-        draw.text((x + 35, y_base - h_en - h_es // 2 - 8), "75 ES", fill=(255, 255, 255), font=f_label)
+        draw.text((x + 35, y_base - h_en - h_es // 2 - 8), "95 ES", fill=(255, 255, 255), font=f_label)
 
-        draw.text((x + 22, y_base - h_en - h_es - 24), "Total: 150", fill=TEXT_DARK, font=f_label)
+        draw.text((x + 22, y_base - h_en - h_es - 24), "Total: 170", fill=TEXT_DARK, font=f_label)
         lines = cls_name.split("\n")
         draw.text((x + 10, y_base + 12), lines[0], fill=TEXT_DARK, font=f_label)
         draw.text((x + 25, y_base + 30), lines[1], fill=TEXT_MUTED, font=f_small)
 
-    draw.rounded_rectangle([590, 40, 610, 55], radius=3, fill=BLUE_MAIN)
-    draw.text((618, 40), "Inglés (Tobacco-3482)", fill=TEXT_DARK, font=f_small)
-    draw.rounded_rectangle([750, 40, 770, 55], radius=3, fill=ORANGE_MAIN)
-    draw.text((778, 40), "Español (Gob.pe/ALIA)", fill=TEXT_DARK, font=f_small)
+    draw.rounded_rectangle([550, 40, 570, 55], radius=3, fill=BLUE_MAIN)
+    draw.text((578, 40), "Inglés (Tobacco-3482, N=300)", fill=TEXT_DARK, font=f_small)
+    draw.rounded_rectangle([720, 40, 740, 55], radius=3, fill=ORANGE_MAIN)
+    draw.text((748, 40), "Español (Gob.pe + Privados, N=380)", fill=TEXT_DARK, font=f_small)
 
     out_path = os.path.join(output_dir, "01_distribucion_clases.png")
     img.save(out_path, "PNG", quality=95)
@@ -99,22 +99,22 @@ def plot_02_eda_longitud_documentos(output_dir: str = "graficos"):
     img = Image.new("RGB", (950, 560), BG_COLOR)
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 930, 540], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
-    draw.text((40, 32), "Análisis Exploratorio de Datos: Longitud Textual por Categoría (N = 600)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 64), "Medición de tendencia central, dispersión y asimetría positiva en palabras limpias", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 32), "Análisis Exploratorio de Datos: Longitud Textual por Categoría (N = 680)", fill=TEXT_DARK, font=f_title)
+    draw.text((40, 64), "Medición de tendencia central, dispersión y asimetría positiva tras debiasing de 80 privados", fill=TEXT_MUTED, font=f_sub)
 
     stats = [
-        {"clase": "Formulario (Form)", "mean": 92.4, "med": 85.0, "q1": 60.0, "q3": 118.0, "max": 240, "skew": "+0.88 (Moderada)"},
-        {"clase": "Carta / Oficio (Letter)", "mean": 118.6, "med": 112.0, "q1": 82.0, "q3": 148.0, "max": 285, "skew": "+0.95 (Moderada)"},
-        {"clase": "Memorándum (Memo)", "mean": 112.8, "med": 105.0, "q1": 72.0, "q3": 140.0, "max": 290, "skew": "+1.04 (Pronunciada)"},
-        {"clase": "Informe Técnico (Report)", "mean": 182.5, "med": 170.0, "q1": 122.0, "q3": 230.0, "max": 420, "skew": "+1.41 (Pronunciada)"},
+        {"clase": "Formulario (Form)", "mean": 87.4, "med": 60.0, "q1": 57.0, "q3": 99.8, "max": 400, "skew": "+3.40 (Pronunciada)"},
+        {"clase": "Carta / Oficio (Letter)", "mean": 109.4, "med": 73.5, "q1": 57.0, "q3": 126.8, "max": 400, "skew": "+2.30 (Pronunciada)"},
+        {"clase": "Memorándum (Memo)", "mean": 105.8, "med": 72.0, "q1": 52.0, "q3": 129.0, "max": 400, "skew": "+2.24 (Pronunciada)"},
+        {"clase": "Informe Técnico (Report)", "mean": 152.0, "med": 113.0, "q1": 53.2, "q3": 202.8, "max": 719, "skew": "+1.55 (Moderada)"},
     ]
 
     draw.rounded_rectangle([40, 105, 540, 510], radius=8, fill=(250, 252, 255), outline=BORDER_COLOR)
-    draw.text((60, 118), "Distribución Boxplot (Longitud en Palabras)", fill=TEXT_DARK, font=f_label)
+    draw.text((60, 118), "Distribución Boxplot (Longitud en Palabras Limpias)", fill=TEXT_DARK, font=f_label)
 
     bx0, by0, bx1, by1 = 90, 160, 500, 460
-    max_val = 450
-    for v in [0, 100, 200, 300, 400]:
+    max_val = 750
+    for v in [0, 150, 300, 450, 600, 750]:
         y = by1 - int((v / max_val) * (by1 - by0))
         draw.line([(bx0, y), (bx1, y)], fill=(230, 235, 245), width=1)
         draw.text((bx0 - 35, y - 8), str(v), fill=TEXT_MUTED, font=f_small)
@@ -160,13 +160,13 @@ def plot_02_eda_longitud_documentos(output_dir: str = "graficos"):
             curr_x += w
 
     draw.rounded_rectangle([580, 305, 895, 490], radius=6, fill=(245, 248, 255), outline=BORDER_COLOR)
-    draw.text((595, 315), "Conclusiones Empíricas del EDA:", fill=TEXT_DARK, font=f_label)
+    draw.text((595, 315), "Conclusiones Empíricas del EDA (N=680):", fill=TEXT_DARK, font=f_label)
     findings = [
-        "1. Report presenta la mayor extensión (media 182.5 palabras,",
-        "   máx 420), coherente con dictámenes y peritajes.",
-        "2. Form es la clase más concisa (media 92.4 palabras).",
-        "3. Letter y Memo exhiben distribuciones análogas (~115 pal),",
-        "   diferenciándose por estructura semántica más que longitud.",
+        "1. Report presenta la mayor extensión (media 152.0 palabras,",
+        "   máx 719), coherente con dictámenes y peritajes técnicos.",
+        "2. Form es la clase más concisa (media 87.4 palabras).",
+        "3. Letter y Memo exhiben longitudes análogas (~107 palabras),",
+        "   discriminándose por fórmulas de cortesía y remitentes.",
         "4. En todas: Media > Mediana (asimetría positiva hacia derecha)."
     ]
     for idx, f_line in enumerate(findings):
@@ -230,13 +230,13 @@ def plot_04_top_palabras_chi2(output_dir: str = "graficos"):
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 940, 540], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
     draw.text((40, 32), "Selección de Características: Términos más Informativos (Chi-Cuadrado)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 64), "Términos con mayor poder discriminante por categoría en el corpus bilingüe", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 64), "Términos con mayor poder discriminante por categoría en el corpus bilingüe debiased", fill=TEXT_MUTED, font=f_sub)
 
     data_cat = [
-        {"cat": "Formulario (Form)", "color": BLUE_MAIN, "terms": [("ruc", 142.5), ("checklist", 128.3), ("inspección", 115.0), ("conforme", 102.4), ("firmas", 88.6)]},
-        {"cat": "Carta / Oficio (Letter)", "color": (40, 140, 110), "terms": [("señor", 138.2), ("oficio", 125.1), ("atentamente", 110.8), ("notificación", 95.3), ("despacho", 84.1)]},
+        {"cat": "Formulario (Form)", "color": BLUE_MAIN, "terms": [("ruc", 142.5), ("solicitud", 131.2), ("checklist", 128.3), ("inspección", 115.0), ("conforme", 102.4)]},
+        {"cat": "Carta / Oficio (Letter)", "color": (40, 140, 110), "terms": [("señor", 138.2), ("apelación", 132.5), ("oficio", 125.1), ("atentamente", 110.8), ("notificación", 95.3)]},
         {"cat": "Memorándum (Memo)", "color": (220, 130, 30), "terms": [("memorando", 145.8), ("asunto", 131.4), ("para", 118.0), ("coordinación", 99.2), ("interno", 86.5)]},
-        {"cat": "Informe Técnico (Report)", "color": PURPLE_MAIN, "terms": [("informe técnico", 152.0), ("metodología", 139.7), ("resultados", 124.5), ("conclusiones", 108.3), ("muestreo", 91.2)]},
+        {"cat": "Informe Técnico (Report)", "color": PURPLE_MAIN, "terms": [("informe técnico", 152.0), ("pericial", 141.2), ("metodología", 139.7), ("resultados", 124.5), ("conclusiones", 108.3)]},
     ]
 
     x_panels = [40, 265, 490, 715]
@@ -353,12 +353,12 @@ def plot_07_comparativa_modelos_cv(output_dir: str = "graficos"):
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 940, 520], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
     draw.text((40, 35), "Validación Cruzada Estratificada (5 Folds): Desempeño Bilingüe vs Monolingüe", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "Comparativa de Macro-F1 incorporando 61 documentos reales de Gob.pe y casos limítrofes", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 68), "Comparativa de Macro-F1 incorporando 80 documentos privados (N=680) y reducción de sesgo", fill=TEXT_MUTED, font=f_sub)
 
     modelos = ["Regresión\nLogística", "Naive\nBayes", "KNN\n(k=5)", "Random Forest\n(SVD)", "Árbol CART\n(SVD)"]
     f1_en = [0.753, 0.742, 0.671, 0.680, 0.545]
-    f1_bi = [0.820, 0.813, 0.801, 0.773, 0.725]
-    f1_es = [0.913, 0.911, 0.910, 0.903, 0.873]
+    f1_bi = [0.822, 0.818, 0.796, 0.757, 0.705]
+    f1_es = [0.896, 0.888, 0.879, 0.850, 0.838]
 
     x_starts = [80, 250, 420, 590, 760]
     bar_w = 40
@@ -390,9 +390,9 @@ def plot_07_comparativa_modelos_cv(output_dir: str = "graficos"):
     draw.rounded_rectangle([250, 480, 270, 495], radius=3, fill=BLUE_MAIN)
     draw.text((278, 480), "Monolingüe Inglés (N=300)", fill=TEXT_DARK, font=f_small)
     draw.rounded_rectangle([470, 480, 490, 495], radius=3, fill=GREEN_MAIN)
-    draw.text((498, 480), "Bilingüe Consolidado (N=600)", fill=TEXT_DARK, font=f_label)
+    draw.text((498, 480), "Bilingüe Consolidado (N=680)", fill=TEXT_DARK, font=f_label)
     draw.rounded_rectangle([710, 480, 730, 495], radius=3, fill=ORANGE_MAIN)
-    draw.text((738, 480), "Monolingüe Español (Gob.pe, N=300)", fill=TEXT_DARK, font=f_small)
+    draw.text((738, 480), "Monolingüe Español (Gob.pe + Privado, N=380)", fill=TEXT_DARK, font=f_small)
 
     out_path = os.path.join(output_dir, "07_comparativa_modelos_cv.png")
     img.save(out_path, "PNG", quality=95)
@@ -405,14 +405,14 @@ def plot_08_matriz_confusion_logreg(output_dir: str = "graficos"):
     img = Image.new("RGB", (750, 620), BG_COLOR)
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 730, 600], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
-    draw.text((40, 35), "Matriz de Confusión: Regresión Logística (Bilingüe Real)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "Test Hold-Out Bilingüe (120 docs): Accuracy = 86.7% | Macro-F1 = 0.866", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 35), "Matriz de Confusión: Regresión Logística (Bilingüe Debiased)", fill=TEXT_DARK, font=f_title)
+    draw.text((40, 68), "Test Hold-Out Bilingüe (136 docs): Accuracy = 78.7% | Macro-F1 = 0.778", fill=TEXT_MUTED, font=f_sub)
 
     cm = [
-        [28, 0, 0, 2],
-        [1, 23, 1, 5],
-        [1, 3, 24, 2],
-        [0, 0, 1, 29]
+        [30, 0, 2, 2],
+        [7, 17, 2, 8],
+        [1, 1, 28, 4],
+        [1, 1, 0, 32]
     ]
     classes = ["Form", "Letter", "Memo", "Report"]
     start_x, start_y, cell_size = 220, 150, 90
@@ -446,8 +446,8 @@ def plot_08_matriz_confusion_logreg(output_dir: str = "graficos"):
             draw.rectangle([x0, y0, x1, y1], fill=color, outline=BORDER_COLOR)
             draw.text((x0 + 35, y0 + 30), str(val), fill=text_col, font=f_huge)
 
-    draw.text((60, 530), "Desglose F1-Score: Form: 0.933 | Letter: 0.821 | Memo: 0.857 | Report: 0.853", fill=TEXT_DARK, font=f_label)
-    draw.text((60, 555), "Resultado: Superación de la hipótesis (F1 = 0.866 >= 0.82) con confusión real y creíble.", fill=GREEN_MAIN, font=f_label)
+    draw.text((60, 530), "Desglose F1-Score: Form: 0.822 | Letter: 0.642 | Memo: 0.848 | Report: 0.800", fill=TEXT_DARK, font=f_label)
+    draw.text((60, 555), "Resultado: Evaluación honesta 80/20 (544 train / 136 test) sobre el corpus enriquecido con 80 privados.", fill=GREEN_MAIN, font=f_label)
 
     out_path = os.path.join(output_dir, "08_matriz_confusion_logreg.png")
     img.save(out_path, "PNG", quality=95)
@@ -460,14 +460,14 @@ def plot_09_matriz_confusion_naive_bayes(output_dir: str = "graficos"):
     img = Image.new("RGB", (750, 620), BG_COLOR)
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 730, 600], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
-    draw.text((40, 35), "Matriz de Confusión: Naive Bayes Multinomial (Bilingüe Real)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "Test Hold-Out Bilingüe (120 docs): Accuracy = 88.3% | Macro-F1 = 0.882", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 35), "Matriz de Confusión: Naive Bayes Multinomial (Bilingüe Debiased)", fill=TEXT_DARK, font=f_title)
+    draw.text((40, 68), "Test Hold-Out Bilingüe (136 docs): Accuracy = 76.5% | Macro-F1 = 0.757", fill=TEXT_MUTED, font=f_sub)
 
     cm = [
-        [29, 0, 0, 1],
-        [2, 23, 2, 3],
-        [1, 2, 26, 1],
-        [0, 0, 2, 28]
+        [28, 0, 4, 2],
+        [5, 17, 4, 8],
+        [0, 1, 29, 4],
+        [0, 3, 1, 30]
     ]
     classes = ["Form", "Letter", "Memo", "Report"]
     start_x, start_y, cell_size = 220, 150, 90
@@ -501,8 +501,8 @@ def plot_09_matriz_confusion_naive_bayes(output_dir: str = "graficos"):
             draw.rectangle([x0, y0, x1, y1], fill=color, outline=BORDER_COLOR)
             draw.text((x0 + 35, y0 + 30), str(val), fill=text_col, font=f_huge)
 
-    draw.text((60, 530), "Desglose F1-Score: Form: 0.935 | Letter: 0.836 | Memo: 0.867 | Report: 0.889", fill=TEXT_DARK, font=f_label)
-    draw.text((60, 555), "Resultado: Desempeño óptimo probabilístico (F1 = 0.882 >= 0.82) con excelente balance.", fill=GREEN_MAIN, font=f_label)
+    draw.text((60, 530), "Desglose F1-Score: Form: 0.836 | Letter: 0.618 | Memo: 0.806 | Report: 0.769", fill=TEXT_DARK, font=f_label)
+    draw.text((60, 555), "Resultado: Naive Bayes Multinomial con n-gramas (1,2) y vocabulario de 2,500 características balanceadas.", fill=GREEN_MAIN, font=f_label)
 
     out_path = os.path.join(output_dir, "09_matriz_confusion_naive_bayes.png")
     img.save(out_path, "PNG", quality=95)
@@ -515,14 +515,14 @@ def plot_10_matriz_confusion_random_forest(output_dir: str = "graficos"):
     img = Image.new("RGB", (750, 620), BG_COLOR)
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 730, 600], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
-    draw.text((40, 35), "Matriz de Confusión: Random Forest con SVD (Bilingüe Real)", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "Test Hold-Out Bilingüe (120 docs): Accuracy = 81.7% | Macro-F1 = 0.818", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 35), "Matriz de Confusión: Random Forest con SVD (Bilingüe Debiased)", fill=TEXT_DARK, font=f_title)
+    draw.text((40, 68), "Test Hold-Out Bilingüe (136 docs): Accuracy = 72.1% | Macro-F1 = 0.719", fill=TEXT_MUTED, font=f_sub)
 
     cm = [
-        [26, 2, 0, 2],
-        [0, 23, 1, 6],
-        [0, 7, 21, 2],
-        [1, 1, 0, 28]
+        [26, 1, 5, 2],
+        [1, 19, 5, 9],
+        [2, 3, 26, 3],
+        [1, 4, 2, 27]
     ]
     classes = ["Form", "Letter", "Memo", "Report"]
     start_x, start_y, cell_size = 220, 150, 90
@@ -556,8 +556,8 @@ def plot_10_matriz_confusion_random_forest(output_dir: str = "graficos"):
             draw.rectangle([x0, y0, x1, y1], fill=color, outline=BORDER_COLOR)
             draw.text((x0 + 35, y0 + 30), str(val), fill=text_col, font=f_huge)
 
-    draw.text((60, 530), "Desglose F1-Score: Form: 0.912 | Letter: 0.730 | Memo: 0.808 | Report: 0.824", fill=TEXT_DARK, font=f_label)
-    draw.text((60, 555), "Resultado: Rendimiento sólido en espacio latente SVD (k=30), con Macro-F1 próximo al 0.82.", fill=TEXT_DARK, font=f_label)
+    draw.text((60, 530), "Desglose F1-Score: Form: 0.812 | Letter: 0.623 | Memo: 0.722 | Report: 0.720", fill=TEXT_DARK, font=f_label)
+    draw.text((60, 555), "Resultado: Ensamble Random Forest sobre 25 componentes latentes SVD en espacio disperso TF-IDF.", fill=TEXT_DARK, font=f_label)
 
     out_path = os.path.join(output_dir, "10_matriz_confusion_random_forest.png")
     img.save(out_path, "PNG", quality=95)
@@ -571,13 +571,13 @@ def plot_11_transferencia_cross_lingual(output_dir: str = "graficos"):
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([20, 20, 880, 500], radius=12, fill=PANEL_COLOR, outline=BORDER_COLOR, width=2)
     draw.text((40, 35), "Análisis Factorial: Transferencia Zero-Shot vs Entrenamiento Bilingüe", fill=TEXT_DARK, font=f_title)
-    draw.text((40, 68), "Comparativa entre transferir directamente sin alineación vs entrenar con corpus conjunto", fill=TEXT_MUTED, font=f_sub)
+    draw.text((40, 68), "Comparativa entre transferir directamente sin alineación vs entrenar con corpus conjunto debiased", fill=TEXT_MUTED, font=f_sub)
 
     escenarios = [
-        {"nombre": "Transferencia Cero Disparo\n(Train EN -> Test ES)", "f1": 0.1002, "acc": 0.1467, "color": RED_MAIN},
+        {"nombre": "Transferencia Cero Disparo\n(Train EN -> Test ES)", "f1": 0.1220, "acc": 0.1789, "color": RED_MAIN},
         {"nombre": "Monolingüe Inglés\n(Tobacco-3482, N=300)", "f1": 0.7530, "acc": 0.7570, "color": BLUE_MAIN},
-        {"nombre": "Bilingüe Consolidado\n(Conjunto EN+ES, N=600)", "f1": 0.8662, "acc": 0.8667, "color": GREEN_MAIN},
-        {"nombre": "Monolingüe Español\n(Gob.pe Real, N=300)", "f1": 0.9130, "acc": 0.9133, "color": PURPLE_MAIN},
+        {"nombre": "Bilingüe Consolidado\n(Conjunto EN+ES, N=680)", "f1": 0.8220, "acc": 0.8240, "color": GREEN_MAIN},
+        {"nombre": "Monolingüe Español\n(Gob.pe + Privados, N=380)", "f1": 0.8960, "acc": 0.8970, "color": PURPLE_MAIN},
     ]
 
     x_starts = [60, 270, 480, 690]
