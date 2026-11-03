@@ -4,11 +4,11 @@ Script interactivo para probar el clasificador bilingüe de documentos administr
 (Form, Letter, Memo, Report) en tiempo real con cualquier texto en español o inglés,
 archivos de texto (.txt) o documentos oficiales en formato PDF (.pdf).
 
-Uso:
-    python probar_clasificador.py                               # Modo interactivo en consola (acepta texto o rutas de PDF/TXT)
-    python probar_clasificador.py --demo                        # Ejecuta 4 casos de prueba reales
-    python probar_clasificador.py --texto "..."                 # Clasifica un texto directo
-    python probar_clasificador.py --archivo ruta/documento.pdf  # Clasifica un PDF oficial directamente
+Incorpora:
+- Extracción de N-gramas (Unigramas + Bigramas) para capturar combinaciones clave
+  como 'de_mi_consideracion', 'inter_office', 'informe_tecnico', etc.
+- Ponderación TF-IDF y estimación probabilística de máxima verosimilitud.
+- Extracción nativa de texto desde PDFs oficiales mediante pdfplumber.
 """
 
 import os
@@ -57,7 +57,6 @@ def extraer_texto_de_archivo(ruta_archivo: str, max_paginas: int = 5) -> str:
             raise ImportError("La librería 'pdfplumber' no está disponible para leer PDFs.")
 
     elif ext in (".jpg", ".jpeg", ".png", ".tiff", ".bmp"):
-        # Verificamos si existe pytesseract disponible
         try:
             import pytesseract
             from PIL import Image
@@ -72,16 +71,25 @@ def extraer_texto_de_archivo(ruta_archivo: str, max_paginas: int = 5) -> str:
             )
 
     else:
-        # Archivo de texto plano (.txt, .csv, etc.)
         with open(ruta_limpia, "r", encoding="utf-8", errors="replace") as f:
             return f.read().strip()
 
 
-class ClasificadorDocumental:
-    """Clasificador bilingüe con soporte híbrido (scikit-learn o NumPy puro)."""
+def extraer_tokens_y_bigramas(texto: str):
+    """Genera lista combinada de unigramas y bigramas léxicos."""
+    palabras = texto.split()
+    if not palabras:
+        return []
+    bigramas = [palabras[i] + "_" + palabras[i + 1] for i in range(len(palabras) - 1)]
+    return palabras + bigramas
 
-    def __init__(self, dataset_path: str = "dataset_bilingue.csv"):
+
+class ClasificadorDocumental:
+    """Clasificador bilingüe con soporte híbrido de N-gramas (scikit-learn o NumPy puro)."""
+
+    def __init__(self, dataset_path: str = "dataset_bilingue.csv", max_features: int = 2500):
         self.dataset_path = dataset_path
+        self.max_features = max_features
         self.classes = ["Form", "Letter", "Memo", "Report"]
         self.model_sklearn = None
         self.vocab = {}
@@ -104,36 +112,37 @@ class ClasificadorDocumental:
             from sklearn.linear_model import LogisticRegression
 
             pipeline = Pipeline([
-                ("tfidf", TfidfVectorizer(max_features=1500, ngram_range=(1, 2))),
+                ("tfidf", TfidfVectorizer(max_features=self.max_features, ngram_range=(1, 2))),
                 ("clf", LogisticRegression(max_iter=1000, C=1.0, penalty="l2", random_state=42))
             ])
             pipeline.fit(X_raw, y_raw)
             self.model_sklearn = pipeline
             self.classes = list(pipeline.classes_)
         except ImportError:
-            # Fallback a clasificador probabilístico en NumPy puro
-            doc_tokens = [t.split() for t in X_raw]
+            # Fallback probabilístico optimizado en NumPy con Unigramas + Bigramas
+            doc_features = [extraer_tokens_y_bigramas(t) for t in X_raw]
             df_counts = Counter()
-            for tokens in doc_tokens:
-                df_counts.update(set(tokens))
+            for feats in doc_features:
+                df_counts.update(set(feats))
 
-            top_terms = [t for t, _ in df_counts.most_common(1500)]
+            top_terms = [t for t, _ in df_counts.most_common(self.max_features)]
             self.vocab = {t: i for i, t in enumerate(top_terms)}
-            N = len(doc_tokens)
+            N = len(doc_features)
             self.idf = {t: math.log((1 + N) / (1 + df_counts[t])) + 1 for t in top_terms}
 
             self.classes = sorted(list(set(y_raw)))
             self.class_priors = {c: math.log(y_raw.count(c) / N) for c in self.classes}
             self.class_term_weights = {c: np.zeros(len(self.vocab)) for c in self.classes}
 
-            for tokens, c in zip(doc_tokens, y_raw):
-                counts = Counter(tokens)
+            for feats, c in zip(doc_features, y_raw):
+                counts = Counter(feats)
                 for term, cnt in counts.items():
                     if term in self.vocab:
                         idx = self.vocab[term]
                         self.class_term_weights[c][idx] += cnt * self.idf[term]
 
             for c in self.classes:
+                # Suavizado de Laplace
                 self.class_term_weights[c] = (self.class_term_weights[c] + 1.0) / (
                     self.class_term_weights[c].sum() + len(self.vocab)
                 )
@@ -146,7 +155,7 @@ class ClasificadorDocumental:
             probs_arr = self.model_sklearn.predict_proba([texto_limpio])[0]
             probs = {c: float(p) for c, p in zip(self.model_sklearn.classes_, probs_arr)}
         else:
-            tokens = texto_limpio.split()
+            tokens = extraer_tokens_y_bigramas(texto_limpio)
             tokens_in_v = [t for t in tokens if t in self.vocab]
             scores = {}
             for c in self.classes:
@@ -182,7 +191,7 @@ def mostrar_resultado(texto: str, pred: str, conf: float, probs: dict, texto_lim
     print(f"CATEGORÍA PREDICHA:    [{pred.upper()}] -> {labels_es.get(pred, pred)}")
     print(f"NIVEL DE CONFIANZA:    {conf:.1f}%")
     print("-" * 68)
-    print("DESGLOSE DE PROBABILIDADES POR CLASE:")
+    print("DESGLOSE DE PROBABILIDADES POR CLASE (Modelo con N-gramas):")
     for c in sorted(probs.keys()):
         p = probs[c] * 100
         barra = "█" * int(p / 5) + "░" * (20 - int(p / 5))
@@ -237,7 +246,7 @@ Conclusions: Compliance was verified in 92% of evaluated batches."""
 def ejecutar_demo(clasificador: ClasificadorDocumental):
     print("\n" + "#" * 68)
     print("### DEMOSTRACIÓN DE CLASIFICACIÓN BILINGÜE EN TIEMPO REAL ###")
-    print("### Corpus Entrenado: 600 Documentos (Tobacco-3482 + Gob.pe)   ###")
+    print("### Corpus: 600 Documentos | Espacio: Unigramas + Bigramas    ###")
     print("#" * 68)
 
     for i, (titulo, texto) in enumerate(CASOS_DEMO, 1):
@@ -251,6 +260,7 @@ def modo_interactivo(clasificador: ClasificadorDocumental):
     print("  SISTEMA BILINGÜE DE CLASIFICACIÓN DE DOCUMENTOS ADMINISTRATIVOS")
     print("  Categorías: Form (Formulario) | Letter (Carta/Oficio)")
     print("              Memo (Memorándum) | Report (Informe Técnico)")
+    print("  Modelo optimizado con N-gramas (Unigramas + Bigramas)")
     print("=" * 68)
     print("Puedes:")
     print(" 1. Escribir o pegar el texto de cualquier documento.")
@@ -293,9 +303,9 @@ def main():
     parser.add_argument("--archivo", type=str, help="Clasificar un archivo .PDF o .TXT directamente")
     args = parser.parse_args()
 
-    print("[Iniciando] Cargando corpus documental bilingüe y entrenando modelo...")
+    print("[Iniciando] Cargando corpus documental bilingüe y extrayendo N-gramas...")
     clasificador = ClasificadorDocumental()
-    print("[Listo] Modelo ajustado exitosamente sobre 600 documentos.")
+    print(f"[Listo] Modelo ajustado exitosamente con {len(clasificador.vocab)} características (Unigramas + Bigramas).")
 
     if args.demo:
         ejecutar_demo(clasificador)
