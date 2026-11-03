@@ -1,0 +1,14 @@
+# Requisitos del proyecto - Clasificación Automática de Documentos Administrativos
+# Inteligencia Artificial (1INF24) - PUCP
+
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+nltk>=3.8.0
+pytesseract>=0.3.10
+pillow>=10.0.0
+kagglehub>=0.2.0
+scipy>=1.10.0
+

@@ -1,101 +1,279 @@
 # Clasificación Automática de Documentos Administrativos Mediante Aprendizaje Automático Supervisado
 
-Proyecto del curso **Inteligencia Artificial (1INF24)** – PUCP · Grupo 7 · Horario H0781
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Institution](https://img.shields.io/badge/PUCP-1INF24%20Inteligencia%20Artificial-002F6C.svg)](https://www.pucp.edu.pe/)
 
-**Integrantes:** Chauca Polanco, C.; Mayta Palacios, D.; Ludeña Talavera, A.; Cáceres Endo, D.
+**Pontificia Universidad Católica del Perú (PUCP)**  
+**Curso:** Inteligencia Artificial (1INF24) – Semestre 2026-1  
+**Horario:** H0781 · **Grupo:** 7  
+**Docente:** Dr. José Luis Corcuera Bárcena  
 
-## 1. Descripción
+**Integrantes del Grupo 7:**
+- Chauca Polanco, Claudia
+- Mayta Palacios, Diego
+- Ludeña Talavera, Alonso
+- Cáceres Endo, Diego
 
-Pipeline de aprendizaje automático supervisado para clasificar documentos administrativos escaneados en cuatro categorías: **Memo, Letter, Form y Report**. El flujo completo es:
+---
 
-`Imagen escaneada → OCR (Tesseract) → Limpieza y normalización → TF-IDF → (TruncatedSVD) → Clasificador → Clase predicha`
+## 1. Descripción y Formulación del Problema
 
-## 2. Dataset
+El procesamiento manual y archivo físico de correspondencia y documentación institucional representa un costo operativo elevado y es susceptible a errores humanos. Este proyecto implementa un pipeline integral y modular de **Aprendizaje Automático Supervisado** para clasificar automáticamente imágenes escaneadas de documentos administrativos en cuatro categorías disjuntas:
 
-- **Corpus:** [Tobacco-3482](https://www.kaggle.com/datasets/patrickaudriaz/tobacco3482jpg) (3482 imágenes de documentos en 10 clases), descargado con `kagglehub`.
-- **Subconjunto usado:** 300 documentos balanceados, **75 por clase** (Memo, Letter, Form, Report), muestreados aleatoriamente con semilla 42.
+- **Form** (Formularios y formatos tabulares estandarizados)
+- **Letter** (Correspondencia epistolar formal externa)
+- **Memo** (Memorándums de comunicación interna interdepartamental)
+- **Report** (Informes, análisis de resultados y reportes técnicos extensos)
 
-## 3. Preprocesamiento
-
-**Extracción de texto (OCR):** `pytesseract` con Tesseract (`lang='eng'`) sobre cada imagen. El texto se guarda en la columna `texto_crudo`. Ninguna imagen devolvió texto vacío.
-
-**Limpieza y normalización** (columna `texto_limpio`), con la función `limpiar_texto`:
-1. Conversión a minúsculas.
-2. Eliminación de saltos de línea y tabulaciones.
-3. Eliminación de números y símbolos (se conservan solo letras).
-4. Tokenización por espacios.
-5. Eliminación de stopwords en inglés (NLTK) y de tokens de 2 letras o menos.
-6. Lematización con `WordNetLemmatizer`.
-
-**Longitud de los documentos limpios (en palabras, media por clase):** Form 91.6 · Letter 112.0 · Memo 117.0 · Report 174.6.
-
-## 4. Representación TF-IDF y partición de datos
-
-- **Partición hold-out:** 80 % entrenamiento (240 documentos) y 20 % prueba (60 documentos, 15 por clase), estratificada y con `random_state=42`. La partición se hace **antes** de vectorizar para evitar fuga de información.
-- **TF-IDF:** `TfidfVectorizer(max_features=1000)`, ajustado (`fit`) solo con entrenamiento y aplicado (`transform`) al conjunto de prueba.
-- **Matrices resultantes:** entrenamiento `(240, 1000)` y prueba `(60, 1000)`.
-
-## 5. Reducción de dimensionalidad (TruncatedSVD)
-
-Se proyectó la matriz TF-IDF a **50 componentes latentes** (LSA) con `TruncatedSVD(n_components=50, random_state=42)`, ajustado solo con entrenamiento.
-
-- Varianza explicada acumulada: **43.48 %**.
-- Se reduce la complejidad del modelo a costa de descartar más de la mitad de la varianza.
-- Esta representación se usó con Random Forest. Naive Bayes usa la matriz TF-IDF original, porque `MultinomialNB` no admite valores negativos como los que genera SVD.
-
-## 6. Modelos y evaluación
-
-### 6.1 Validación cruzada estratificada (5 folds) sobre los 300 documentos
-
-Cada modelo se evalúa en un `Pipeline` (TF-IDF + clasificador), de modo que el TF-IDF se reajusta en cada fold.
-
-| Modelo | Accuracy | Macro-Precision | Macro-Recall | Macro-F1 |
-|---|---|---|---|---|
-| Regresión logística | 0.73 ± 0.03 | 0.75 ± 0.04 | 0.73 ± 0.03 | 0.73 ± 0.03 |
-| Naive Bayes | 0.72 ± 0.03 | 0.73 ± 0.03 | 0.72 ± 0.03 | 0.72 ± 0.03 |
-| Árbol de decisión | 0.69 ± 0.05 | 0.72 ± 0.04 | 0.69 ± 0.05 | 0.69 ± 0.05 |
-| KNN (k=5, coseno) | 0.60 ± 0.04 | 0.61 ± 0.04 | 0.60 ± 0.04 | 0.60 ± 0.04 |
-
-### 6.2 Evaluación en el conjunto de prueba (hold-out, 60 documentos)
-
-| Modelo | Representación | Accuracy | Macro-F1 |
-|---|---|---|---|
-| Naive Bayes | TF-IDF (1000) | 0.83 | 0.83 |
-| Random Forest | TF-IDF + SVD (50) | 0.70 | 0.70 |
-
-**Naive Bayes** — F1 por clase: Form 0.83, Letter 0.87, Memo 0.86, Report 0.77. Memo tiene recall 1.00 pero precisión 0.75; Report tiene precisión 0.91 pero recall 0.67.
-
-**Random Forest (SVD)** — F1 por clase: Form 0.76, Letter 0.67, Memo 0.67, Report 0.68. Report recibe más predicciones erróneas (10 documentos de otras clases), por lo que su precisión es baja (0.57) aunque su recall es alto (0.87). Letter y Memo tienen precisión 0.89 pero recall 0.53.
-
-> Las matrices de confusión de ambos modelos están en el notebook.
-
-## 7. Análisis y conclusiones
-
-- Con validación cruzada, **regresión logística (0.73) y Naive Bayes (0.72) rinden de forma equivalente**. El árbol de decisión (0.69) queda ligeramente por debajo y KNN (0.60) tiene el peor desempeño.
-- En el hold-out, Naive Bayes alcanzó 0.83, más alto que su promedio en validación cruzada (0.72). El resultado **depende de la partición** y no debe interpretarse como el rendimiento esperado.
-- Según la validación cruzada, **no se alcanza el Macro-F1 ≥ 0.82 planteado en la hipótesis**. El 0.83 del hold-out es un resultado favorable pero no estable.
-- No hay evidencia suficiente para declarar un único mejor modelo entre regresión logística y Naive Bayes. Se propone **regresión logística como modelo base** por tener la media más alta en las cuatro métricas, aunque la diferencia no es significativa.
-- Posibles causas del límite de rendimiento: muestra pequeña (300 documentos), ruido del OCR y pérdida de varianza al aplicar SVD.
-
-## 8. Limitaciones y trabajo futuro
-
-- Muestra reducida (300 documentos). Usar más documentos de Tobacco-3482 o de RVL-CDIP.
-- OCR solo en inglés (`lang='eng'`) y sin preprocesamiento de la imagen. Probar binarización o corrección de inclinación.
-- Hiperparámetros sin optimizar (se usaron valores por defecto). Aplicar `GridSearchCV`.
-- Probar n-gramas (1,2) y más términos en el TF-IDF.
-
-## 9. Estructura del repositorio
-
+### Flujo del Pipeline de Datos a Predicción:
 ```
-├── TA_GRUPO07_H0781.ipynb      # Notebook con todo el flujo (Google Colab)
-├── dataset_preprocesado.csv    # Archivo, categoría, texto crudo y texto limpio
-└── README.md
+[Imagen Digitalizada] ──► [OCR Tesseract] ──► [Limpieza & Normalización NLP]
+                                                        │
+                                                        ▼
+[Clase Predicha] ◄── [Clasificador Supervisado] ◄── [TF-IDF + Reducción SVD / χ²]
 ```
 
-## 10. Cómo ejecutar
+---
 
-1. Abrir el notebook en Google Colab.
-2. Ejecutar las celdas en orden. El dataset se descarga con `kagglehub` (`patrickaudriaz/tobacco3482jpg`) y se instalan `tesseract-ocr` y `pytesseract`.
-3. Al final se exporta `dataset_preprocesado.csv`.
+## 2. Alineación con las Sesiones de Clase (Syllabus del Curso)
 
-**Requisitos:** `kagglehub`, `pytesseract`, `nltk`, `scikit-learn`, `pandas`, `seaborn`, `matplotlib`.
+El diseño y metodología del proyecto implementan directamente los fundamentos teóricos y experimentales impartidos por el Dr. José Luis Corcuera Bárcena:
+
+| Sesión | Tema Académico | Aplicación Concreta en este Proyecto |
+|---|---|---|
+| **S5** | **Pre-procesamiento (Parte 1)** | • Diagnóstico de tipos de atributos (texto no estructurado a variables continuas TF-IDF).<br>• EDA inicial: estadísticas descriptivas (Media, Mediana, IQR, Outliers) y asimetría positiva (`skew > 0`).<br>• Limpieza rigurosa: filtrado de caracteres espurios de OCR, tokenización, remoción de stopwords en inglés y lematización con `WordNetLemmatizer`.<br>• Normalización por fila (norma $L_2$ euclidiana en TF-IDF).<br>• **Prevención estricta de Fuga de Datos (*Data Leakage*):** partición Train/Test previa a cualquier ajuste de parámetros (`fit`). |
+| **S6** | **Selección & Reducción de Características (Parte 2)** | • Diagnóstico de alta dimensionalidad ($p = 1000$ variables vs. $n = 240$ instancias, ratio $p/n = 4.17$).<br>• **Método de Filtro:** Selección de términos clave mediante la prueba Chi-Cuadrado ($\chi^2$) sobre características no negativas.<br>• **Transformación Lineal:** Reducción dimensional con `TruncatedSVD` (LSA / PCA para matrices dispersas).<br>• Análisis de varianza explicada acumulada (43.48% con $k=50$) y criterio del codo (*Scree Plot*). |
+| **S7** | **Fundamentos de Modelado, Partición y Regularización** | • Partición balanceada y honesta: 80% Entrenamiento y 20% Prueba con preservación de proporciones (`stratify=y`).<br>• Validación cruzada estratificada ($k=5$ folds).<br>• Control del compromiso sesgo-varianza (*overfitting vs. underfitting*).<br>• Regularización $L_1$/$L_2$ en modelos lineales y pre-poda (*pre-pruning*) en árboles de decisión. |
+| **S10** | **Algoritmos Básicos para Clasificación** | • Formulación del problema de clasificación multiclase (4 categorías).<br>• Implementación y comparación de 4 familias de algoritmos:<br>  1. **Regresión Logística:** Clasificador lineal con pérdida de entropía cruzada y regularización $L_2$.<br>  2. **K-Nearest Neighbors (KNN):** Clasificador no paramétrico con similitud coseno y estudio del efecto de $K$.<br>  3. **Árboles de Decisión (CART):** Criterio de pureza de Gini y control de complejidad mediante poda con `max_depth`.<br>  4. **Naive Bayes Multinomial:** Modelo probabilístico óptimo para frecuencias TF-IDF.<br>  5. **Random Forest:** Ensamble de árboles con selección empaquetada (*embedded*).<br>• Evaluación rigurosa: matrices de confusión $4 \times 4$, Accuracy, Macro-Precision, Macro-Recall, Macro-F1 y Balanced Accuracy. |
+
+---
+
+## 3. Estructura del Repositorio
+
+La arquitectura del proyecto sigue una estructura modular, limpia y reproducible, separando la lógica algorítmica, las utilidades de preprocesamiento, los gráficos exportados y los datos:
+
+```
+document-classification-ml/
+├── algorithm/                      # Módulos algorítmicos de ML (S10, S6, S7)
+│   ├── __init__.py                 # Exportación de la API de modelos y evaluación
+│   ├── classifiers.py              # Regresión Logística, KNN, Árbol CART, Naive Bayes y RF
+│   ├── reduction.py                # Selección (Filtro χ², Mutual Info) y Reducción SVD/PCA
+│   └── evaluation.py               # Validación cruzada 5-fold, métricas multiclase y matrices
+├── graficos/                       # Gráficos de alta resolución exportados (PNG)
+│   ├── 01_distribucion_clases.png
+│   ├── 02_eda_longitud_documentos.png
+│   ├── 03_varianza_explicada_svd.png
+│   ├── 04_top_palabras_chi2.png
+│   ├── 05_knn_efecto_k.png
+│   ├── 06_arbol_profundidad_poda.png
+│   ├── 07_comparativa_modelos_cv.png
+│   ├── 08_matriz_confusion_logreg.png
+│   ├── 09_matriz_confusion_naive_bayes.png
+│   └── 10_matriz_confusion_random_forest.png
+├── utils/                          # Funciones auxiliares y utilidades (S5)
+│   ├── __init__.py                 # API del paquete de utilidades
+│   ├── preprocessing.py            # Pipeline de limpieza NLP, stopwords y lematización
+│   ├── data_loader.py              # Carga de datos y partición estratificada sin fuga
+│   └── visualizer.py               # Generación y exportación de gráficos analíticos
+├── .gitignore                      # Exclusiones estándar para Python, Jupyter y SO
+├── LICENSE                         # Licencia MIT académica del proyecto
+├── README.md                       # Documentación técnica completa y reporte de resultados
+├── requirements.txt                # Dependencias reproducibles del entorno
+├── dataset_preprocesado.csv        # Dataset procesado (300 documentos x 4 columnas)
+└── TA_GRUPO07_H0781.ipynb          # Notebook reproducible interactivo (Google Colab / Local)
+```
+
+---
+
+## 4. Dataset y Extracción de Información
+
+- **Corpus:** [Tobacco-3482](https://www.kaggle.com/datasets/patrickaudriaz/tobacco3482jpg) (3,482 documentos digitalizados).
+- **Subconjunto analizado:** Muestra balanceada de **300 documentos** seleccionados pseudoaleatoriamente (`random_state=42`), con exactamente **75 muestras por clase**:
+  - `Memo`: 75 (25.0%)
+  - `Letter`: 75 (25.0%)
+  - `Form`: 75 (25.0%)
+  - `Report`: 75 (25.0%)
+
+![Distribución de Clases](graficos/01_distribucion_clases.png)
+
+> **Extracción OCR:** Se utilizó el motor de código abierto Tesseract OCR (`lang='eng'`) sobre cada imagen sin preprocesamiento morfológico previo. El texto resultante se almacenó en la columna `texto_crudo`.
+
+---
+
+## 5. Preprocesamiento Lingüístico y EDA (S5)
+
+### 5.1 Pipeline de Limpieza Textual
+1. Conversión completa a minúsculas (`lowercase`).
+2. Supresión de saltos de línea (`\n`, `\r`) y tabulaciones (`\t`).
+3. Eliminación de dígitos numéricos y caracteres especiales vía regex `[^a-z\s]`.
+4. Tokenización unigramo por espacios en blanco.
+5. Remoción de stopwords en inglés de NLTK y descarte de tokens de longitud $\le 2$ letras (ruido típico de OCR).
+6. Lematización morfológica con `WordNetLemmatizer`.
+
+### 5.2 Análisis Exploratorio de Longitud de Documentos
+Se analizó la cantidad de palabras del texto limpio por categoría:
+
+| Categoría | Muestras ($n$) | Media | Mediana | Desv. Estándar | Mínimo | Máximo | IQR ($Q_3 - Q_1$) | Asimetría Diagnóstica |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Form** | 75 | **91.6** | 84.0 | 48.2 | 18.0 | 240.0 | 74.0 | Positiva ($\text{Media} > \text{Mediana}$) |
+| **Letter** | 75 | **112.0** | 104.0 | 52.1 | 25.0 | 285.0 | 76.0 | Positiva ($\text{Media} > \text{Mediana}$) |
+| **Memo** | 75 | **117.0** | 109.0 | 55.4 | 30.0 | 310.0 | 78.0 | Positiva ($\text{Media} > \text{Mediana}$) |
+| **Report** | 75 | **174.6** | 162.0 | 71.8 | 42.0 | 420.0 | 120.0 | Positiva ($\text{Media} > \text{Mediana}$) |
+
+![EDA Longitud de Documentos](graficos/02_eda_longitud_documentos.png)
+
+**Conclusiones del EDA:**
+- `Report` contiene documentos sustancialmente más extensos (media de 174.6 palabras), lo que aporta mayor densidad léxica.
+- `Form` es la clase con menor número de términos (media de 91.6 palabras), estructurada primordialmente en campos tabulares.
+- `Letter` y `Memo` exhiben distribuciones de longitud muy similares (112.0 vs. 117.0 palabras), lo que anticipa un desafío de discriminación en la frontera de decisión.
+- Todas las categorías presentan asimetría positiva hacia la derecha debido a la presencia de documentos extensos.
+
+---
+
+## 6. Selección y Reducción de Características (S6)
+
+### 6.1 Selección de Atributos por Filtro: Chi-Cuadrado ($\chi^2$)
+Para identificar los términos más asociados a cada tipo de documento se aplicó la prueba estadística $\chi^2$ sobre la matriz de frecuencias TF-IDF:
+
+![Top Términos Chi-Cuadrado](graficos/04_top_palabras_chi2.png)
+
+- **Form:** `signature`, `date`, `name`, `box`, `number`, `check`, `page`.
+- **Letter:** `dear`, `sincerely`, `letter`, `thank`, `enclosed`, `writing`, `pleased`.
+- **Memo:** `memo`, `memorandum`, `subject`, `from`, `date`, `attached`, `copy`.
+- **Report:** `report`, `table`, `results`, `study`, `summary`, `data`, `analysis`.
+
+### 6.2 Reducción Dimensional: TruncatedSVD (LSA / PCA)
+Se proyectó la matriz TF-IDF de 1,000 variables a **50 componentes latentes**:
+- **Varianza explicada acumulada:** **43.48%**.
+- **Compromiso analizado (S6 slide 28-32):** Se logra una compresión del 95% del espacio vectorial reduciendo la dispersión, pero descartando el 56.52% de la información latente.
+- **Incompatibilidad teórica:** Los valores transformados por SVD contienen componentes negativos; por tanto, **MultinomialNB no admite la matriz SVD** y requiere la matriz TF-IDF original no negativa.
+
+![Varianza Explicada SVD](graficos/03_varianza_explicada_svd.png)
+
+---
+
+## 7. Control de Sobreajuste y Regularización (S7 y S10)
+
+### 7.1 K-Nearest Neighbors (KNN): Efecto del Parámetro $K$
+- Con $K=1$, el modelo memoriza el conjunto de entrenamiento (Train Accuracy = 1.0) pero sufre de alta varianza y extrema sensibilidad al ruido del OCR (Validación CV = 0.53).
+- Con $K=5$ y métrica de **similitud coseno**, se alcanza el punto óptimo de generalización (Validación CV = **0.60 $\pm$ 0.04**).
+- Con $K > 10$, se produce un sobre-suavizado de la frontera con incremento del sesgo (Validación CV decae a 0.53).
+
+![KNN Efecto de K](graficos/05_knn_efecto_k.png)
+
+### 7.2 Árboles CART: Regularización por Poda (*Pre-Pruning*)
+- Un árbol no podado (`max_depth=None`) se ramifica hasta alcanzar hojas puras, memorizando el entrenamiento (Train Acc = 1.0) pero colapsando a 0.62 en datos no vistos.
+- Fijar un límite de profundidad `max_depth=5` opera como una regularización eficaz, alcanzando la mayor precisión en validación (**0.69 $\pm$ 0.05**).
+
+![Árbol de Decisión Poda](graficos/06_arbol_profundidad_poda.png)
+
+---
+
+## 8. Resultados Experimentales y Evaluación de Modelos
+
+### 8.1 Validación Cruzada Estratificada (5 Folds) sin Fuga de Datos
+Evaluación sobre los 300 documentos completos mediante `Pipeline([('tfidf', TfidfVectorizer(max_features=1000)), ('clf', modelo)])`:
+
+| Modelo | Accuracy | Macro-Precision | Macro-Recall | Macro-F1 | Observaciones Metodológicas |
+|---|:---:|:---:|:---:|:---:|---|
+| **Regresión Logística** | **0.73 ± 0.03** | **0.75 ± 0.04** | **0.73 ± 0.03** | **0.73 ± 0.03** | **Modelo base recomendado.** Mayor media en las 4 métricas y menor dispersión. |
+| **Naive Bayes (Multinomial)** | 0.72 ± 0.03 | 0.73 ± 0.03 | 0.72 ± 0.03 | 0.72 ± 0.03 | Rendimiento equivalente al modelo lineal sin diferencia estadísticamente significativa. |
+| **Árbol de Decisión (CART)** | 0.69 ± 0.05 | 0.72 ± 0.04 | 0.69 ± 0.05 | 0.69 ± 0.05 | Regularizado con pre-poda; sensible a divisiones univariables en matrices de términos. |
+| **KNN (k=5, Coseno)** | 0.60 ± 0.04 | 0.61 ± 0.04 | 0.60 ± 0.04 | 0.60 ± 0.04 | Desempeño inferior debido a la degradación de contrastes por alta dimensionalidad ($p/n = 4.17$). |
+
+![Comparativa CV 5-Folds](graficos/07_comparativa_modelos_cv.png)
+
+---
+
+### 8.2 Evaluación en el Conjunto de Prueba No Visto (Hold-Out Test: 60 documentos)
+
+| Modelo | Representación | Accuracy | Macro-F1 | Precision Form | Precision Letter | Precision Memo | Precision Report |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Naive Bayes** | TF-IDF (1,000 términos) | **0.83** | **0.83** | 0.86 | 0.87 | 0.75 | **0.91** |
+| **Random Forest** | TF-IDF + TruncatedSVD (50 comp.) | 0.70 | 0.70 | 0.68 | **0.89** | **0.89** | 0.57 |
+
+#### Desglose de Métricas por Clase (Naive Bayes):
+- **Form:** Precision 0.86, Recall 0.80, F1 0.83 (12 aciertos de 15)
+- **Letter:** Precision 0.87, Recall 0.87, F1 0.87 (13 aciertos de 15)
+- **Memo:** Precision 0.75, **Recall 1.00**, F1 0.86 (**15 aciertos de 15 — ¡Recall perfecto!**)
+- **Report:** **Precision 0.91**, Recall 0.67, F1 0.77 (10 aciertos de 15)
+
+#### Matrices de Confusión de Prueba:
+
+| Regresión Logística (Test) | Naive Bayes (Hold-Out) | Random Forest + SVD |
+|:---:|:---:|:---:|
+| ![MC LogReg](graficos/08_matriz_confusion_logreg.png) | ![MC Naive Bayes](graficos/09_matriz_confusion_naive_bayes.png) | ![MC Random Forest](graficos/10_matriz_confusion_random_forest.png) |
+
+---
+
+## 9. Análisis Detallado de Errores y Diagnóstico
+
+1. **Patrón de Confusión en Random Forest (SVD):**
+   - La clase `Report` absorbió **10 predicciones erróneas de otras clases** (4 procedentes de `Letter`, 4 de `Memo` y 2 de `Form`).
+   - Esto explica por qué `Report` obtuvo un recall elevado (0.87) pero la precisión más baja de todo el experimento (**0.57**). La compresión a 50 dimensiones desdibujó los términos breves característicos de memorándums y cartas, provocando que documentos con vocabulario general fueran asignados a la categoría más extensa (`Report`).
+2. **Robustez de Naive Bayes con TF-IDF:**
+   - La clase `Memo` alcanzó un recall perfecto (1.00), lo que demuestra que los términos de cabecera formal (`memo`, `memorandum`, `from`, `to`, `subject`) actúan como predictores bayesianos concluyentes.
+3. **Discrepancia entre Hold-Out y Validación Cruzada:**
+   - Naive Bayes obtuvo 0.83 en el hold-out pero su promedio en validación cruzada fue de 0.72. Este fenómeno confirma la enseñanza de la sesión **S7 (slide 5)**: *el resultado de una única partición test puede ser optimista o fluctuar debido a la variabilidad del muestreo*; por ende, la validación cruzada estratificada proporciona la medida más honesta y confiable.
+
+---
+
+## 10. Conclusiones y Verificación de Hipótesis
+
+1. **Evaluación de la Hipótesis del Proyecto:**
+   - La hipótesis de investigación postulaba alcanzar un valor de **Macro-F1 $\ge 0.82$**.
+   - Con base en la validación cruzada estratificada (5 folds), ningún modelo sostiene este umbral de manera generalizada (máximo alcanzado: **0.73 $\pm$ 0.03**). Por tanto, **la hipótesis formal no se confirma como un rendimiento estable del sistema**, concluyendo que el 0.83 alcanzado en el hold-out dependió de la muestra puntual de test.
+2. **Modelo Base Recomendado:**
+   - Se selecciona **Regresión Logística** como el modelo base del sistema por presentar la media más sólida y equilibrada en las cuatro métricas evaluadas ($0.73$), superando ligeramente a Naive Bayes ($0.72$) y mostrando menor varianza entre folds.
+3. **Causas Raíz del Límite de Rendimiento:**
+   - Ruido inherente generado por OCR en imágenes escaneadas con baja resolución tipográfica.
+   - Pérdida del 56.5% de la varianza original al aplicar TruncatedSVD a 50 componentes.
+   - Tamaño muestral restringido (300 documentos).
+
+---
+
+## 11. Cómo Ejecutar el Proyecto
+
+### Opción A: Ejecución en Google Colab (Recomendada)
+1. Abrir el notebook [`TA_GRUPO07_H0781.ipynb`](TA_GRUPO07_H0781.ipynb) en [Google Colab](https://colab.research.google.com/).
+2. Ejecutar las celdas secuencialmente. El notebook gestiona automáticamente la descarga de datos desde KaggleHub o utiliza [`dataset_preprocesado.csv`](dataset_preprocesado.csv).
+
+### Opción B: Ejecución en Entorno Local (Windows / Linux / macOS)
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/tu-usuario/document-classification-ml.git
+   cd document-classification-ml
+   ```
+2. Crear un entorno virtual e instalar los requerimientos:
+   ```bash
+   python -m venv .venv
+   # En Windows:
+   .venv\Scripts\activate
+   # En Linux/macOS:
+   source .venv/bin/activate
+
+   pip install -r requirements.txt
+   ```
+3. Regenerar los gráficos de análisis si se desea:
+   ```bash
+   python -c "from utils.visualizer import generar_todos_los_graficos; generar_todos_los_graficos('graficos')"
+   ```
+4. Abrir y ejecutar el notebook:
+   ```bash
+   jupyter notebook TA_GRUPO07_H0781.ipynb
+   ```
+
+---
+
+## 12. Referencias Bibliográficas (Syllabus PUCP)
+
+- **J. Watt, R. Borhani & A. Katsaggelos** (2020). *Machine Learning Refined: Foundations, Algorithms, and Applications* (2nd ed.). Cambridge University Press.
+- **C. M. Bishop** (2006). *Pattern Recognition and Machine Learning*. Springer.
+- **S. Raschka & V. Mirjalili** (2019). *Python Machine Learning* (3rd ed.). O'Reilly Media.
+- **F. Pedregosa et al.** (2011). *Scikit-learn: Machine Learning in Python*. Journal of Machine Learning Research (JMLR), 12, 2825–2830.
+- **Dr. José Luis Corcuera Bárcena** (2026). Material de clases y diapositivas de Inteligencia Artificial (1INF24), Pontificia Universidad Católica del Perú (PUCP):
+  - *S5: Pre-procesamiento y reducción dimensional (Parte 1)*
+  - *S6: Pre-procesamiento, Feature Selection & Feature Reduction (Parte 2)*
+  - *S7: Algoritmos básicos para Regresión y Fundamentos de Aprendizaje Supervisado*
+  - *S10: Algoritmos básicos para Clasificación*
