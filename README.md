@@ -59,6 +59,7 @@ document-classification-ml/
 ├── dataset_es.csv                      # Corpus monolingüe en español (300 documentos con 61 PDFs reales de Gob.pe)
 ├── dataset_preprocesado.csv            # Dataset bilingüe preprocesado para ejecución directa
 ├── LICENSE                             # Licencia de código abierto MIT
+├── probar_clasificador.py              # Script interactivo de inferencia y prueba en tiempo real
 ├── README.md                           # Documentación técnica, metodológica y experimental integral
 ├── requirements.txt                    # Dependencias y bibliotecas de ejecución
 └── TA_GRUPO07_H0781.ipynb              # Notebook interactivo reproducible con código, experimentos y conclusiones
@@ -302,13 +303,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Ejecución del Pipeline:
+### Ejecución y Pruebas del Sistema:
 ```bash
-# Ejecutar scripts de experimentación y visualización
-python scratch/run_bilingual_experiments.py
-python scratch/generate_bilingual_graficos.py
+# 1. Demostración interactiva en vivo con 4 casos de prueba reales
+python probar_clasificador.py --demo
 
-# Abrir el Notebook interactivo
+# 2. Clasificar un texto o fragmento directamente desde la línea de comandos
+python probar_clasificador.py --texto "MEMORÁNDUM N° 100-2024: Se dispone la comisión de servicios..."
+
+# 3. Modo interactivo en consola (permite pegar cualquier documento y clasificarlo)
+python probar_clasificador.py
+
+# 4. Regenerar la suite completa de 11 gráficos analíticos oficiales
+python -m utils.visualizer
+
+# 5. Abrir el Notebook interactivo con todo el pipeline de investigación
 jupyter notebook TA_GRUPO07_H0781.ipynb
 ```
 
