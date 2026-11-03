@@ -1,12 +1,14 @@
 """
 probar_clasificador.py
 Script interactivo para probar el clasificador bilingüe de documentos administrativos
-(Form, Letter, Memo, Report) en tiempo real con cualquier texto en español o inglés.
+(Form, Letter, Memo, Report) en tiempo real con cualquier texto en español o inglés,
+archivos de texto (.txt) o documentos oficiales en formato PDF (.pdf).
 
 Uso:
-    python probar_clasificador.py              # Modo interactivo en consola
-    python probar_clasificador.py --demo       # Ejecuta 4 casos de prueba reales
-    python probar_clasificador.py --texto "..." # Clasifica un texto directo
+    python probar_clasificador.py                               # Modo interactivo en consola (acepta texto o rutas de PDF/TXT)
+    python probar_clasificador.py --demo                        # Ejecuta 4 casos de prueba reales
+    python probar_clasificador.py --texto "..."                 # Clasifica un texto directo
+    python probar_clasificador.py --archivo ruta/documento.pdf  # Clasifica un PDF oficial directamente
 """
 
 import os
@@ -22,6 +24,57 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
 
 from utils.preprocessing import limpiar_texto
+
+
+def extraer_texto_de_archivo(ruta_archivo: str, max_paginas: int = 5) -> str:
+    """
+    Extrae texto crudo desde un archivo PDF o TXT.
+    Soporta extracción nativa de PDFs administrativos mediante pdfplumber.
+    """
+    ruta_limpia = ruta_archivo.strip().strip("'").strip('"')
+    if not os.path.exists(ruta_limpia):
+        raise FileNotFoundError(f"No se encontró el archivo: '{ruta_limpia}'")
+
+    ext = os.path.splitext(ruta_limpia)[1].lower()
+
+    if ext == ".pdf":
+        try:
+            import pdfplumber
+            texto_total = []
+            with pdfplumber.open(ruta_limpia) as pdf:
+                num_paginas = len(pdf.pages)
+                paginas_a_leer = min(num_paginas, max_paginas)
+                print(f"[PDF Extractor] Leyendo '{os.path.basename(ruta_limpia)}' ({paginas_a_leer} de {num_paginas} páginas)...")
+                for i in range(paginas_a_leer):
+                    txt_pagina = pdf.pages[i].extract_text()
+                    if txt_pagina:
+                        texto_total.append(txt_pagina)
+            resultado = "\n".join(texto_total).strip()
+            if not resultado:
+                raise ValueError("El archivo PDF no contiene capa de texto digital (es un escaneo de solo imagen). Requiere OCR.")
+            return resultado
+        except ImportError:
+            raise ImportError("La librería 'pdfplumber' no está disponible para leer PDFs.")
+
+    elif ext in (".jpg", ".jpeg", ".png", ".tiff", ".bmp"):
+        # Verificamos si existe pytesseract disponible
+        try:
+            import pytesseract
+            from PIL import Image
+            img = Image.open(ruta_limpia)
+            print(f"[OCR Extractor] Procesando imagen '{os.path.basename(ruta_limpia)}' con OCR...")
+            return pytesseract.image_to_string(img, lang="spa+eng").strip()
+        except ImportError:
+            raise ValueError(
+                f"El archivo '{os.path.basename(ruta_limpia)}' es una imagen/foto.\n"
+                "Para extraer texto de imágenes se requiere un motor de OCR (como Tesseract / pytesseract).\n"
+                "Los archivos .PDF y .TXT con texto digital sí son procesados directamente."
+            )
+
+    else:
+        # Archivo de texto plano (.txt, .csv, etc.)
+        with open(ruta_limpia, "r", encoding="utf-8", errors="replace") as f:
+            return f.read().strip()
 
 
 class ClasificadorDocumental:
@@ -64,7 +117,6 @@ class ClasificadorDocumental:
             for tokens in doc_tokens:
                 df_counts.update(set(tokens))
 
-            # 1,500 características de mayor frecuencia documental
             top_terms = [t for t, _ in df_counts.most_common(1500)]
             self.vocab = {t: i for i, t in enumerate(top_terms)}
             N = len(doc_tokens)
@@ -82,7 +134,6 @@ class ClasificadorDocumental:
                         self.class_term_weights[c][idx] += cnt * self.idf[term]
 
             for c in self.classes:
-                # Suavizado de Laplace
                 self.class_term_weights[c] = (self.class_term_weights[c] + 1.0) / (
                     self.class_term_weights[c].sum() + len(self.vocab)
                 )
@@ -114,7 +165,7 @@ class ClasificadorDocumental:
         return pred, confianza, probs, texto_limpio
 
 
-def mostrar_resultado(texto: str, pred: str, conf: float, probs: dict, texto_limpio: str):
+def mostrar_resultado(texto: str, pred: str, conf: float, probs: dict, texto_limpio: str, origen: str = ""):
     labels_es = {
         "Form": "Formulario / Ficha de Inspección",
         "Letter": "Carta / Oficio Notificatorio",
@@ -123,11 +174,13 @@ def mostrar_resultado(texto: str, pred: str, conf: float, probs: dict, texto_lim
     }
 
     print("\n" + "=" * 68)
+    if origen:
+        print(f"ORIGEN DEL DOCUMENTO: {origen}")
     extracto = (texto.strip().replace("\n", " "))[:110]
-    print(f"DOCUMENTO INGRESADO: \"{extracto}...\"")
+    print(f"DOCUMENTO (Extracto):  \"{extracto}...\"")
     print("-" * 68)
-    print(f"CATEGORÍA PREDICHA:  [{pred.upper()}] -> {labels_es.get(pred, pred)}")
-    print(f"NIVEL DE CONFIANZA:  {conf:.1f}%")
+    print(f"CATEGORÍA PREDICHA:    [{pred.upper()}] -> {labels_es.get(pred, pred)}")
+    print(f"NIVEL DE CONFIANZA:    {conf:.1f}%")
     print("-" * 68)
     print("DESGLOSE DE PROBABILIDADES POR CLASE:")
     for c in sorted(probs.keys()):
@@ -190,7 +243,7 @@ def ejecutar_demo(clasificador: ClasificadorDocumental):
     for i, (titulo, texto) in enumerate(CASOS_DEMO, 1):
         print(f"\n[CASO {i}/4] {titulo}")
         pred, conf, probs, limpio = clasificador.predecir(texto)
-        mostrar_resultado(texto, pred, conf, probs, limpio)
+        mostrar_resultado(texto, pred, conf, probs, limpio, origen="Caso de prueba predefinido")
 
 
 def modo_interactivo(clasificador: ClasificadorDocumental):
@@ -199,12 +252,14 @@ def modo_interactivo(clasificador: ClasificadorDocumental):
     print("  Categorías: Form (Formulario) | Letter (Carta/Oficio)")
     print("              Memo (Memorándum) | Report (Informe Técnico)")
     print("=" * 68)
-    print("Escribe o pega el texto de cualquier documento y presiona Enter.")
-    print("(Escribe 'salir' para terminar o 'demo' para ver los casos de prueba)\n")
+    print("Puedes:")
+    print(" 1. Escribir o pegar el texto de cualquier documento.")
+    print(" 2. Ingresar la ruta de un archivo .PDF o .TXT (ej. arrastrar y soltar el archivo).")
+    print("(Escribe 'salir' para terminar o 'demo' para ver los 4 casos de prueba)\n")
 
     while True:
         try:
-            entrada = input("\n>>> Ingresa texto del documento:\n").strip()
+            entrada = input("\n>>> Ingresa texto o ruta de archivo (.pdf / .txt):\n").strip()
             if not entrada:
                 continue
             if entrada.lower() in ("salir", "exit", "quit", "q"):
@@ -214,8 +269,18 @@ def modo_interactivo(clasificador: ClasificadorDocumental):
                 ejecutar_demo(clasificador)
                 continue
 
+            ruta_potencial = entrada.strip("'").strip('"')
+            if os.path.exists(ruta_potencial) and os.path.isfile(ruta_potencial):
+                try:
+                    texto_extraido = extraer_texto_de_archivo(ruta_potencial)
+                    pred, conf, probs, limpio = clasificador.predecir(texto_extraido)
+                    mostrar_resultado(texto_extraido, pred, conf, probs, limpio, origen=f"Archivo: {ruta_potencial}")
+                except Exception as err:
+                    print(f"[Error al leer archivo]: {err}")
+                continue
+
             pred, conf, probs, limpio = clasificador.predecir(entrada)
-            mostrar_resultado(entrada, pred, conf, probs, limpio)
+            mostrar_resultado(entrada, pred, conf, probs, limpio, origen="Texto ingresado por consola")
         except (KeyboardInterrupt, EOFError):
             print("\n¡Sesión finalizada!")
             break
@@ -225,7 +290,7 @@ def main():
     parser = argparse.ArgumentParser(description="Clasificador bilingüe de documentos administrativos")
     parser.add_argument("--demo", action="store_true", help="Ejecutar los 4 casos de prueba predefinidos")
     parser.add_argument("--texto", type=str, help="Clasificar un fragmento de texto pasado como argumento")
-    parser.add_argument("--archivo", type=str, help="Clasificar el contenido de un archivo de texto")
+    parser.add_argument("--archivo", type=str, help="Clasificar un archivo .PDF o .TXT directamente")
     args = parser.parse_args()
 
     print("[Iniciando] Cargando corpus documental bilingüe y entrenando modelo...")
@@ -236,12 +301,14 @@ def main():
         ejecutar_demo(clasificador)
     elif args.texto:
         pred, conf, probs, limpio = clasificador.predecir(args.texto)
-        mostrar_resultado(args.texto, pred, conf, probs, limpio)
+        mostrar_resultado(args.texto, pred, conf, probs, limpio, origen="Argumento --texto")
     elif args.archivo:
-        with open(args.archivo, encoding="utf-8") as f:
-            contenido = f.read()
-        pred, conf, probs, limpio = clasificador.predecir(contenido)
-        mostrar_resultado(contenido, pred, conf, probs, limpio)
+        try:
+            texto = extraer_texto_de_archivo(args.archivo)
+            pred, conf, probs, limpio = clasificador.predecir(texto)
+            mostrar_resultado(texto, pred, conf, probs, limpio, origen=f"Archivo: {args.archivo}")
+        except Exception as err:
+            print(f"[Error]: {err}")
     else:
         modo_interactivo(clasificador)
 
