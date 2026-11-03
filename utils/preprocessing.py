@@ -1,11 +1,9 @@
 """
 preprocessing.py
-Módulo de Preprocesamiento y Limpieza Textual (NLP).
-Alineado con:
-- S5: Pre-procesamiento y reducción dimensional (Parte 1).
-  - Limpieza de datos (vacíos, ruido de caracteres, minúsculas, stopwords).
-  - Lematización léxica.
-  - Análisis Exploratorio de Datos (EDA): Estadísticas descriptivas, media, mediana, asimetría.
+Módulo de Preprocesamiento y Limpieza Textual (NLP):
+- Limpieza de datos (vacíos, ruido de caracteres, minúsculas, stopwords).
+- Lematización léxica.
+- Análisis Exploratorio de Datos (EDA): Estadísticas descriptivas, media, mediana, asimetría.
 """
 
 import re
@@ -57,7 +55,6 @@ def _obtener_lematizador_y_stopwords():
 
         return lemmatizer, stop_words
     except Exception:
-        # Fallback si NLTK no está disponible
         class DummyLemmatizer:
             def lemmatize(self, word):
                 return word
@@ -69,7 +66,7 @@ _lemmatizer, _stopwords = _obtener_lematizador_y_stopwords()
 
 def limpiar_texto(texto: Optional[str]) -> str:
     """
-    Pipeline de limpieza y normalización lingüística (S5 slide 2-3, 28):
+    Pipeline de limpieza y normalización lingüística:
     1. Manejo de valores nulos o no string.
     2. Conversión total a minúsculas (lower casing).
     3. Eliminación de saltos de línea (\r, \n) y tabulaciones (\t).
@@ -101,7 +98,7 @@ def limpiar_texto(texto: Optional[str]) -> str:
 
 def analizar_longitud_documentos(df: pd.DataFrame, columna_texto: str = "texto_limpio", columna_target: str = "categoria") -> pd.DataFrame:
     """
-    Análisis exploratorio de longitud de textos por categoría (S5 slide 8-11).
+    Análisis exploratorio de longitud de textos por categoría.
     Calcula: conteo, media, desviación estándar, cuartiles (Q1, Mediana, Q3), mínimo y máximo.
     Permite diagnosticar asimetría positiva (media > mediana) y valores extremos (outliers).
     """
@@ -109,4 +106,3 @@ def analizar_longitud_documentos(df: pd.DataFrame, columna_texto: str = "texto_l
     df_temp["n_palabras"] = df_temp[columna_texto].astype(str).str.split().str.len()
     stats = df_temp.groupby(columna_target)["n_palabras"].describe().round(1)
     return stats
-

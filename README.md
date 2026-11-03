@@ -36,29 +36,47 @@ El procesamiento manual y archivo físico de correspondencia y documentación in
 
 ---
 
-## 2. Alineación con las Sesiones de Clase (Syllabus del Curso)
+## 2. Marco Metodológico y Fundamentos de Aprendizaje Automático
 
-El diseño y metodología del proyecto implementan directamente los fundamentos teóricos y experimentales impartidos por el Dr. José Luis Corcuera Bárcena:
+El diseño experimental del proyecto implementa las mejores prácticas del flujo de aprendizaje automático supervisado:
 
-| Sesión | Tema Académico | Aplicación Concreta en este Proyecto |
-|---|---|---|
-| **S5** | **Pre-procesamiento (Parte 1)** | • Diagnóstico de tipos de atributos (texto no estructurado a variables continuas TF-IDF).<br>• EDA inicial: estadísticas descriptivas (Media, Mediana, IQR, Outliers) y asimetría positiva (`skew > 0`).<br>• Limpieza rigurosa: filtrado de caracteres espurios de OCR, tokenización, remoción de stopwords en inglés y lematización con `WordNetLemmatizer`.<br>• Normalización por fila (norma $L_2$ euclidiana en TF-IDF).<br>• **Prevención estricta de Fuga de Datos (*Data Leakage*):** partición Train/Test previa a cualquier ajuste de parámetros (`fit`). |
-| **S6** | **Selección & Reducción de Características (Parte 2)** | • Diagnóstico de alta dimensionalidad ($p = 1000$ variables vs. $n = 240$ instancias, ratio $p/n = 4.17$).<br>• **Método de Filtro:** Selección de términos clave mediante la prueba Chi-Cuadrado ($\chi^2$) sobre características no negativas.<br>• **Transformación Lineal:** Reducción dimensional con `TruncatedSVD` (LSA / PCA para matrices dispersas).<br>• Análisis de varianza explicada acumulada (43.48% con $k=50$) y criterio del codo (*Scree Plot*). |
-| **S7** | **Fundamentos de Modelado, Partición y Regularización** | • Partición balanceada y honesta: 80% Entrenamiento y 20% Prueba con preservación de proporciones (`stratify=y`).<br>• Validación cruzada estratificada ($k=5$ folds).<br>• Control del compromiso sesgo-varianza (*overfitting vs. underfitting*).<br>• Regularización $L_1$/$L_2$ en modelos lineales y pre-poda (*pre-pruning*) en árboles de decisión. |
-| **S10** | **Algoritmos Básicos para Clasificación** | • Formulación del problema de clasificación multiclase (4 categorías).<br>• Implementación y comparación de 4 familias de algoritmos:<br>  1. **Regresión Logística:** Clasificador lineal con pérdida de entropía cruzada y regularización $L_2$.<br>  2. **K-Nearest Neighbors (KNN):** Clasificador no paramétrico con similitud coseno y estudio del efecto de $K$.<br>  3. **Árboles de Decisión (CART):** Criterio de pureza de Gini y control de complejidad mediante poda con `max_depth`.<br>  4. **Naive Bayes Multinomial:** Modelo probabilístico óptimo para frecuencias TF-IDF.<br>  5. **Random Forest:** Ensamble de árboles con selección empaquetada (*embedded*).<br>• Evaluación rigurosa: matrices de confusión $4 \times 4$, Accuracy, Macro-Precision, Macro-Recall, Macro-F1 y Balanced Accuracy. |
+1. **Pre-procesamiento Textual y Análisis Exploratorio de Datos (EDA):**
+   - Transformación de texto no estructurado proveniente de escáner en variables numéricas representativas.
+   - Evaluación de tendencia central (media y mediana), dispersión (rango intercuartílico IQR) y asimetría positiva en la longitud de documentos.
+   - Limpieza sistemática de ruido tipográfico mediante expresiones regulares, remoción de palabras de parada (*stopwords*), lematización léxica y normalización euclidiana de vectores (norma $L_2$).
+
+2. **Diagnóstico de Alta Dimensionalidad y Selección de Atributos:**
+   - Abordaje del escenario de alta dimensionalidad ($p = 1000$ variables frente a $n = 240$ observaciones de entrenamiento, $p/n = 4.17$) para mitigar la dispersión espacial.
+   - **Métodos de Filtro:** Evaluación de dependencia estadística entre términos y etiquetas de clase mediante la prueba Chi-Cuadrado ($\chi^2$).
+   - **Transformación Lineal:** Proyección a subespacios de menor dimensión mediante Descomposición en Valores Singulares Truncada (`TruncatedSVD` / LSA), analizando la varianza explicada acumulada y el criterio del codo (*scree plot*).
+
+3. **Prevención Estricta de Fuga de Información (*Data Leakage*):**
+   - Segregación del conjunto de prueba (*Test Set*: 20% estratificado) **antes** de ajustar cualquier vectorizador o reductor dimensional.
+   - Todo parámetro estadístico se aprende exclusivamente sobre el conjunto de entrenamiento mediante `Pipeline` de scikit-learn.
+
+4. **Modelado Supervisado y Control de Complejidad:**
+   - **Regresión Logística:** Clasificador lineal probabilístico con función de pérdida de entropía cruzada (*cross-entropy loss*) y regularización $L_2$ para mitigar sobreajuste.
+   - **Naive Bayes Multinomial:** Modelo generativo probabilístico adaptado a frecuencias de términos discretas TF-IDF.
+   - **Árboles de Decisión (CART):** Algoritmo no paramétrico guiado por ganancia de pureza (impureza de Gini), controlado mediante pre-poda (*pre-pruning*) sobre la profundidad máxima (`max_depth`).
+   - **K-Nearest Neighbors (KNN):** Clasificador por proximidad evaluado con métrica de similitud coseno y exploración del compromiso sesgo-varianza según el parámetro $K$.
+   - **Random Forest:** Ensamble de árboles de decisión sobre la representación comprimida por SVD.
+
+5. **Protocolo de Evaluación Multiclase:**
+   - Validación cruzada estratificada de 5 particiones (*5-Fold Stratified CV*) para estimación reproducible y estable.
+   - Evaluación final en partición independiente (*Hold-Out*) con matrices de confusión $4 \times 4$, Accuracy, Macro-Precision, Macro-Recall, Macro-F1 y Balanced Accuracy.
 
 ---
 
 ## 3. Estructura del Repositorio
 
-La arquitectura del proyecto sigue una estructura modular, limpia y reproducible, separando la lógica algorítmica, las utilidades de preprocesamiento, los gráficos exportados y los datos:
+La arquitectura del proyecto sigue una estructura modular, limpia y reproducible:
 
 ```
 document-classification-ml/
-├── algorithm/                      # Módulos algorítmicos de ML (S10, S6, S7)
-│   ├── __init__.py                 # Exportación de la API de modelos y evaluación
+├── algorithm/                      # Módulos algorítmicos de ML
+│   ├── __init__.py                 # API de modelos, reducción y evaluación
 │   ├── classifiers.py              # Regresión Logística, KNN, Árbol CART, Naive Bayes y RF
-│   ├── reduction.py                # Selección (Filtro χ², Mutual Info) y Reducción SVD/PCA
+│   ├── reduction.py                # Selección (Filtro χ², Mutual Info) y Reducción SVD
 │   └── evaluation.py               # Validación cruzada 5-fold, métricas multiclase y matrices
 ├── graficos/                       # Gráficos de alta resolución exportados (PNG)
 │   ├── 01_distribucion_clases.png
@@ -71,7 +89,7 @@ document-classification-ml/
 │   ├── 08_matriz_confusion_logreg.png
 │   ├── 09_matriz_confusion_naive_bayes.png
 │   └── 10_matriz_confusion_random_forest.png
-├── utils/                          # Funciones auxiliares y utilidades (S5)
+├── utils/                          # Funciones auxiliares y utilidades
 │   ├── __init__.py                 # API del paquete de utilidades
 │   ├── preprocessing.py            # Pipeline de limpieza NLP, stopwords y lematización
 │   ├── data_loader.py              # Carga de datos y partición estratificada sin fuga
@@ -97,18 +115,18 @@ document-classification-ml/
 
 ![Distribución de Clases](graficos/01_distribucion_clases.png)
 
-> **Extracción OCR:** Se utilizó el motor de código abierto Tesseract OCR (`lang='eng'`) sobre cada imagen sin preprocesamiento morfológico previo. El texto resultante se almacenó en la columna `texto_crudo`.
+> **Extracción OCR:** Se utilizó el motor de código abierto Tesseract OCR (`lang='eng'`) sobre cada imagen. El texto resultante se almacenó en la columna `texto_crudo`.
 
 ---
 
-## 5. Preprocesamiento Lingüístico y EDA (S5)
+## 5. Preprocesamiento Lingüístico y EDA
 
 ### 5.1 Pipeline de Limpieza Textual
 1. Conversión completa a minúsculas (`lowercase`).
 2. Supresión de saltos de línea (`\n`, `\r`) y tabulaciones (`\t`).
 3. Eliminación de dígitos numéricos y caracteres especiales vía regex `[^a-z\s]`.
 4. Tokenización unigramo por espacios en blanco.
-5. Remoción de stopwords en inglés de NLTK y descarte de tokens de longitud $\le 2$ letras (ruido típico de OCR).
+5. Remoción de stopwords en inglés de NLTK y descarte de tokens de longitud $\le 2$ letras.
 6. Lematización morfológica con `WordNetLemmatizer`.
 
 ### 5.2 Análisis Exploratorio de Longitud de Documentos
@@ -131,7 +149,7 @@ Se analizó la cantidad de palabras del texto limpio por categoría:
 
 ---
 
-## 6. Selección y Reducción de Características (S6)
+## 6. Selección y Reducción de Características
 
 ### 6.1 Selección de Atributos por Filtro: Chi-Cuadrado ($\chi^2$)
 Para identificar los términos más asociados a cada tipo de documento se aplicó la prueba estadística $\chi^2$ sobre la matriz de frecuencias TF-IDF:
@@ -146,14 +164,14 @@ Para identificar los términos más asociados a cada tipo de documento se aplic�
 ### 6.2 Reducción Dimensional: TruncatedSVD (LSA / PCA)
 Se proyectó la matriz TF-IDF de 1,000 variables a **50 componentes latentes**:
 - **Varianza explicada acumulada:** **43.48%**.
-- **Compromiso analizado (S6 slide 28-32):** Se logra una compresión del 95% del espacio vectorial reduciendo la dispersión, pero descartando el 56.52% de la información latente.
+- **Compromiso analizado:** Se logra una compresión del 95% del espacio vectorial reduciendo la dispersión, pero descartando el 56.52% de la información latente.
 - **Incompatibilidad teórica:** Los valores transformados por SVD contienen componentes negativos; por tanto, **MultinomialNB no admite la matriz SVD** y requiere la matriz TF-IDF original no negativa.
 
 ![Varianza Explicada SVD](graficos/03_varianza_explicada_svd.png)
 
 ---
 
-## 7. Control de Sobreajuste y Regularización (S7 y S10)
+## 7. Control de Sobreajuste y Regularización
 
 ### 7.1 K-Nearest Neighbors (KNN): Efecto del Parámetro $K$
 - Con $K=1$, el modelo memoriza el conjunto de entrenamiento (Train Accuracy = 1.0) pero sufre de alta varianza y extrema sensibilidad al ruido del OCR (Validación CV = 0.53).
@@ -215,7 +233,7 @@ Evaluación sobre los 300 documentos completos mediante `Pipeline([('tfidf', Tfi
 2. **Robustez de Naive Bayes con TF-IDF:**
    - La clase `Memo` alcanzó un recall perfecto (1.00), lo que demuestra que los términos de cabecera formal (`memo`, `memorandum`, `from`, `to`, `subject`) actúan como predictores bayesianos concluyentes.
 3. **Discrepancia entre Hold-Out y Validación Cruzada:**
-   - Naive Bayes obtuvo 0.83 en el hold-out pero su promedio en validación cruzada fue de 0.72. Este fenómeno confirma la enseñanza de la sesión **S7 (slide 5)**: *el resultado de una única partición test puede ser optimista o fluctuar debido a la variabilidad del muestreo*; por ende, la validación cruzada estratificada proporciona la medida más honesta y confiable.
+   - Naive Bayes obtuvo 0.83 en el hold-out pero su promedio en validación cruzada fue de 0.72. Este fenómeno confirma un principio esencial del modelado: *el resultado de una única partición test puede fluctuar debido a la variabilidad del muestreo*; por ende, la validación cruzada estratificada proporciona la medida más honesta y confiable.
 
 ---
 
@@ -266,14 +284,10 @@ Evaluación sobre los 300 documentos completos mediante `Pipeline([('tfidf', Tfi
 
 ---
 
-## 12. Referencias Bibliográficas (Syllabus PUCP)
+## 12. Referencias Bibliográficas
 
 - **J. Watt, R. Borhani & A. Katsaggelos** (2020). *Machine Learning Refined: Foundations, Algorithms, and Applications* (2nd ed.). Cambridge University Press.
 - **C. M. Bishop** (2006). *Pattern Recognition and Machine Learning*. Springer.
 - **S. Raschka & V. Mirjalili** (2019). *Python Machine Learning* (3rd ed.). O'Reilly Media.
 - **F. Pedregosa et al.** (2011). *Scikit-learn: Machine Learning in Python*. Journal of Machine Learning Research (JMLR), 12, 2825–2830.
-- **Dr. José Luis Corcuera Bárcena** (2026). Material de clases y diapositivas de Inteligencia Artificial (1INF24), Pontificia Universidad Católica del Perú (PUCP):
-  - *S5: Pre-procesamiento y reducción dimensional (Parte 1)*
-  - *S6: Pre-procesamiento, Feature Selection & Feature Reduction (Parte 2)*
-  - *S7: Algoritmos básicos para Regresión y Fundamentos de Aprendizaje Supervisado*
-  - *S10: Algoritmos básicos para Clasificación*
+- **Dr. José Luis Corcuera Bárcena** (2026). *Material y diapositivas del curso Inteligencia Artificial (1INF24)*. Pontificia Universidad Católica del Perú (PUCP).

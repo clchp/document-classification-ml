@@ -1,9 +1,8 @@
 """
 data_loader.py
-Módulo para carga, verificación y partición de datos.
-Alineado con:
-- S5: Diagnóstico inicial de calidad de datos, nulos y desbalance de clases (slide 4, 12, 17).
-- S5/S7: Partición Train/Test estratificada (stratify=y) ANTES de transformaciones (S5 slide 15, S7 slide 4-5).
+Módulo para carga, verificación y partición de datos:
+- Diagnóstico inicial de calidad de datos, nulos y balance de clases.
+- Partición Train/Test estratificada (stratify=y) antes de cualquier vectorización.
 """
 
 import os
@@ -22,7 +21,7 @@ def cargar_dataset_preprocesado(ruta_csv: str = "dataset_preprocesado.csv") -> p
     df = pd.read_csv(ruta_csv)
     print(f"[DataLoader] Dataset cargado: {len(df)} registros.")
     print(f"[DataLoader] Valores nulos:\n{df.isnull().sum()}")
-    print(f"[DataLoader] Distribución de clases (S5 slide 12):\n{df['categoria'].value_counts()}")
+    print(f"[DataLoader] Distribución de clases:\n{df['categoria'].value_counts()}")
     return df
 
 
@@ -36,7 +35,7 @@ def dividir_train_test_estratificado(
     """
     Partición estratificada Train / Test (Hold-Out 80% / 20%).
     
-    Regla fundamental para evitar Fuga de Datos (Data Leakage - S5 slide 15, S7 slide 4):
+    Regla fundamental para evitar Fuga de Datos (Data Leakage):
     La partición se ejecuta de forma rigurosa ANTES de ajustar el vectorizador TF-IDF
     o cualquier técnica de reducción dimensional. La muestra de test se reserva únicamente
     para la evaluación final de generalización.
@@ -58,4 +57,3 @@ def dividir_train_test_estratificado(
     print(f"[DataLoader] Distribución en test:\n{y_test.value_counts()}")
 
     return X_train, X_test, y_train, y_test
-

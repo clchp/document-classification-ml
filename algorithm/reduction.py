@@ -1,12 +1,10 @@
 """
 reduction.py
-Módulo de Selección y Reducción de Características.
-Alineado con:
-- S6: Pre-procesamiento, Feature Selection & Feature Reduction.
-  - Selección de atributos: Filtros (Chi-cuadrado, Mutual Info), Empaquetados (Random Forest).
-  - Transformación de atributos: Proyección lineal (TruncatedSVD / PCA para matrices dispersas).
-  - Varianza explicada acumulada y análisis del codo (scree plot).
-  - Prevención de fuga de información (data leakage).
+Módulo de Selección y Reducción de Características:
+- Selección de atributos: Filtros (Chi-cuadrado, Mutual Info), Empaquetados (Random Forest).
+- Transformación de atributos: Proyección lineal (TruncatedSVD / PCA para matrices dispersas).
+- Varianza explicada acumulada y análisis del codo (scree plot).
+- Prevención de fuga de información (data leakage).
 """
 
 from typing import List, Tuple, Dict, Any
@@ -16,7 +14,7 @@ import numpy as np
 def apply_chi2_selection(X_train_tfidf, y_train, feature_names: List[str], k: int = 20) -> List[Tuple[str, float]]:
     """
     Método de Filtro: Prueba Chi-Cuadrado (χ²) para variables categóricas o frecuencias no negativas.
-    Evalúa la dependencia estadística entre cada término TF-IDF y la clase objetivo (S6 slide 15-16).
+    Evalúa la dependencia estadística entre cada término TF-IDF y la clase objetivo.
     """
     from sklearn.feature_selection import chi2, SelectKBest
 
@@ -33,9 +31,9 @@ def apply_chi2_selection(X_train_tfidf, y_train, feature_names: List[str], k: in
 def apply_svd_reduction(X_train_tfidf, X_test_tfidf, n_components: int = 50, random_state: int = 42):
     """
     Transformación de Atributos: TruncatedSVD (Latent Semantic Analysis - LSA).
-    Equivalente a PCA para matrices de términos dispersas (S6 slide 24-34).
+    Equivalente a PCA para matrices de términos dispersas.
     Ajusta (fit) ÚNICAMENTE con los datos de entrenamiento y proyecta (transform) train y test
-    para prevenir data leakage (S6 slide 36, 39).
+    para prevenir data leakage.
     """
     from sklearn.decomposition import TruncatedSVD
 
@@ -50,7 +48,7 @@ def apply_svd_reduction(X_train_tfidf, X_test_tfidf, n_components: int = 50, ran
 def compute_svd_cumulative_variance(X_train_tfidf, max_components: int = 100, random_state: int = 42) -> List[Tuple[int, float]]:
     """
     Calcula la curva de varianza explicada acumulada en función del número de componentes latentes (k).
-    Sirve para identificar el 'codo' de la curva y justificar la elección de k (S6 slide 28, 31, 32).
+    Sirve para identificar el 'codo' de la curva y justificar la elección de k.
     """
     from sklearn.decomposition import TruncatedSVD
 
@@ -65,9 +63,8 @@ def compute_svd_cumulative_variance(X_train_tfidf, max_components: int = 100, ra
 def get_random_forest_importance(rf_model, feature_names: List[str], top_n: int = 20) -> List[Tuple[str, float]]:
     """
     Método Empaquetado (Embedded): Importancia de variables extraída de árboles de decisión ensamble.
-    Integra la selección de atributos dentro del propio proceso de entrenamiento (S6 slide 19, 21-22).
+    Integra la selección de atributos dentro del propio proceso de entrenamiento.
     """
     importances = rf_model.feature_importances_
     sorted_idx = np.argsort(importances)[::-1][:top_n]
     return [(feature_names[i], float(importances[i])) for i in sorted_idx]
-

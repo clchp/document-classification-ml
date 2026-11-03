@@ -1,10 +1,9 @@
 """
 evaluation.py
-Módulo de Métricas y Evaluación Experimental.
-Alineado con:
-- S10: Métricas de clasificación multiclase (Matriz de confusión, Accuracy, Precision, Recall, F1-Score, Balanced Accuracy).
-- S7: Validación cruzada K-fold (S7 slide 6-7).
-- S5/S6: Pipeline reproducible y prevención de Data Leakage (S5 slide 28, S6 slide 39).
+Módulo de Métricas y Evaluación Experimental:
+- Métricas de clasificación multiclase (Matriz de confusión, Accuracy, Precision, Recall, F1-Score, Balanced Accuracy).
+- Validación cruzada estratificada K-fold.
+- Pipeline reproducible y prevención de Fuga de Datos (Data Leakage).
 """
 
 from typing import Dict, Any, List, Optional
@@ -13,7 +12,7 @@ import numpy as np
 
 def compute_classification_metrics(y_true, y_pred, labels: Optional[List[str]] = None) -> Dict[str, Any]:
     """
-    Calcula las métricas estándar de clasificación multiclase (S10 slide 21-24):
+    Calcula las métricas estándar de clasificación multiclase:
     - Matriz de confusión (m x m)
     - Accuracy global = (TP + TN) / N
     - Macro-Precision: promedio no ponderado de precisión por clase
@@ -53,7 +52,7 @@ def compute_classification_metrics(y_true, y_pred, labels: Optional[List[str]] =
 def compute_per_class_metrics(report_dict: Dict[str, Any], classes: List[str]) -> Dict[str, Dict[str, float]]:
     """
     Extrae la precisión, recall y F1-score individuales para cada clase administrativa
-    (Form, Letter, Memo, Report) a partir del reporte de clasificación (S10 slide 23-24).
+    (Form, Letter, Memo, Report) a partir del reporte de clasificación.
     """
     per_class = {}
     for cls in classes:
@@ -71,7 +70,7 @@ def run_stratified_cv_evaluation(model_dict: Dict[str, Any], X_text, y, n_splits
     """
     Ejecuta Validación Cruzada Estratificada (5 Folds) usando Pipelines (TF-IDF + Clasificador).
     Garantiza que el vocabulario y pesos TF-IDF se ajustan ÚNICAMENTE dentro de cada fold
-    de entrenamiento, eliminando completamente el data leakage (S5 slide 28, S7 slide 6-7).
+    de entrenamiento, eliminando completamente el data leakage.
     """
     from sklearn.pipeline import Pipeline
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -100,4 +99,3 @@ def run_stratified_cv_evaluation(model_dict: Dict[str, Any], X_text, y, n_splits
         summary[name] = model_summary
 
     return summary
-
